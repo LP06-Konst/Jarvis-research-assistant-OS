@@ -953,8 +953,8 @@
         // GRAPH & NODE CARDS
         // ============================================
         
-        function renderWorkbench() {
-            loadProjectData();
+        async function renderWorkbench() {
+            await loadProjectData();
             renderGraph();
             renderSourceTray();
             renderPivotsList();
