@@ -136,16 +136,29 @@ def save_state():
     db.commit()
 
 def load_state():
-    """Load state from database"""
+    """Load state from database, seed sample data if empty"""
     global state
     db = get_db()
     cursor = db.execute('SELECT value FROM state WHERE key = ?', ('state',))
     row = cursor.fetchone()
     if row:
         state = json.loads(row[0])
+        # Seed sample data if state has no nodes
+        if not state.get("nodes"):
+            initial = get_initial_state()
+            state["nodes"] = initial["nodes"]
+            state["edges"] = initial["edges"]
+            save_state()
     else:
         state = get_initial_state()
         save_state()
+
+def reset_to_initial():
+    """Reset state to initial with sample data"""
+    global state
+    state = get_initial_state()
+    save_state()
+    return {"message": "State reset with sample data", "nodes": len(state["nodes"]), "edges": len(state["edges"])}
 
 init_db()
 load_state()
@@ -1270,8 +1283,16 @@ def health_check():
         "timestamp": datetime.now().isoformat(),
         "activeProject": state.get("activeProjectId"),
         "projectCount": len(state.get("projects", [])),
-        "proposalCount": len([p for p in state.get("proposals", []) if p.get("status") == "pending"])
+        "proposalCount": len([p for p in state.get("proposals", []) if p.get("status") == "pending"]),
+        "nodeCount": len(state.get("nodes", [])),
+        "edgeCount": len(state.get("edges", []))
     })
+
+@app.route('/api/init', methods=['POST'])
+def init_sample_data():
+    """Initialize sample data if state is empty"""
+    result = reset_to_initial()
+    return jsonify(result)
 
 # ============================================
 # STATIC FILES
