@@ -3,11 +3,12 @@ Jarvis Research OS - Flask Backend
 A project-first research environment with AI chat command interface.
 """
 
-from flask import Flask, request, jsonify, send_from_directory, send_file
+from flask import Flask, request, jsonify, send_from_directory, send_file, g
 from flask_cors import CORS
 import json
 import os
 import re
+import sqlite3
 import uuid
 from datetime import datetime
 from werkzeug.utils import secure_filename
@@ -24,7 +25,44 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs('data', exist_ok=True)
 
 # ============================================
-# STATE SCHEMA (Per PLAN.md)
+# DATABASE SETUP (SQLite for persistence)
+# ============================================
+
+DATABASE = 'data/jarvis.db'
+
+def get_db():
+    """Get database connection for current request"""
+    if 'db' not in g:
+        g.db = sqlite3.connect(DATABASE)
+        g.db.row_factory = sqlite3.Row
+    return g.db
+
+@app.teardown_appcontext
+def close_connection(exception):
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
+
+def init_db():
+    """Initialize database schema"""
+    db = get_db()
+    db.executescript('''
+        CREATE TABLE IF NOT EXISTS state (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        );
+        CREATE TABLE IF NOT EXISTS uploads (
+            id TEXT PRIMARY KEY,
+            project_id TEXT,
+            filename TEXT,
+            path TEXT,
+            created_at TEXT
+        );
+    ''')
+    db.commit()
+
+# ============================================
+# STATE MANAGEMENT
 # ============================================
 def get_initial_state():
     return {
@@ -51,23 +89,29 @@ def get_initial_state():
         }
     }
 
-# Global state (in-memory for this implementation)
+# Global state (loaded from DB)
 state = get_initial_state()
 
 def save_state():
-    """Persist state to disk"""
-    with open('data/state.json', 'w') as f:
-        json.dump(state, f, indent=2, default=str)
+    """Persist state to database"""
+    db = get_db()
+    db.execute('INSERT OR REPLACE INTO state (key, value) VALUES (?, ?)', 
+               ('state', json.dumps(state, indent=2, default=str)))
+    db.commit()
 
 def load_state():
-    """Load state from disk"""
+    """Load state from database"""
     global state
-    if os.path.exists('data/state.json'):
-        with open('data/state.json', 'r') as f:
-            state = json.load(f)
+    db = get_db()
+    cursor = db.execute('SELECT value FROM state WHERE key = ?', ('state',))
+    row = cursor.fetchone()
+    if row:
+        state = json.loads(row[0])
     else:
         state = get_initial_state()
+        save_state()
 
+init_db()
 load_state()
 
 # ============================================
