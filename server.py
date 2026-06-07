@@ -142,7 +142,7 @@ def auto_generate_edges(new_node: Dict) -> List[Dict]:
         # Calculate word overlap
         overlap = new_words & existing_words
         
-        # Strong connection: significant word overlap
+        # Strong connection: 2+ shared words
         if len(overlap) >= 2:
             edges.append({
                 "id": generate_id(),
@@ -152,8 +152,8 @@ def auto_generate_edges(new_node: Dict) -> List[Dict]:
                 "weight": 0.9,
                 "reason": f"Shared concepts: {', '.join(overlap)}"
             })
-        # Medium connection: some word match
-        elif len(overlap) == 1 and len(new_words) > 1:
+        # Medium connection: 1 shared word (when node has 2+ words)
+        elif len(overlap) >= 1 and len(new_words) >= 2:
             edges.append({
                 "id": generate_id(),
                 "source": new_node["id"],
@@ -1137,6 +1137,57 @@ def get_node_connections(node_id):
         "node_id": node_id,
         "suggestions": suggestions,
         "count": len(suggestions)
+    })
+
+
+@app.route('/api/edges/regenerate', methods=['POST'])
+def regenerate_edges():
+    """
+    Regenerate all edges between nodes based on semantic similarity.
+    Useful when node relationships change or on startup.
+    """
+    global state
+    
+    # Clear existing auto-generated edges (keep manual ones)
+    state["edges"] = [e for e in state.get("edges", []) if e.get("type") not in ["semantic", "related"]]
+    
+    new_edges = []
+    
+    # Generate edges for all node pairs
+    for i, node1 in enumerate(state["nodes"]):
+        words1 = set(node1.get("name", "").lower().split())
+        
+        for node2 in state["nodes"][i+1:]:
+            words2 = set(node2.get("name", "").lower().split())
+            overlap = words1 & words2
+            
+            if len(overlap) >= 2:
+                edge_id = generate_id()
+                new_edges.append({
+                    "id": edge_id,
+                    "source": node1["id"],
+                    "target": node2["id"],
+                    "type": "semantic",
+                    "weight": 0.9,
+                    "reason": f"Shared concepts: {', '.join(overlap)}"
+                })
+            elif len(overlap) >= 1 and len(words1) >= 2 and len(words2) >= 2:
+                edge_id = generate_id()
+                new_edges.append({
+                    "id": edge_id,
+                    "source": node1["id"],
+                    "target": node2["id"],
+                    "type": "related",
+                    "weight": 0.6,
+                    "reason": f"Related term: {list(overlap)[0]}"
+                })
+    
+    state["edges"].extend(new_edges)
+    save_state()
+    
+    return jsonify({
+        "edges_generated": len(new_edges),
+        "total_edges": len(state["edges"])
     })
 
 
