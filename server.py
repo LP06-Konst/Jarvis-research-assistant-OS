@@ -65,19 +65,55 @@ def init_db():
 # STATE MANAGEMENT
 # ============================================
 def get_initial_state():
+    """Get initial state with sample research concepts"""
+    sample_nodes = [
+        {"id": "node-1", "name": "Research Methodology", "status": "concept", "createdAt": datetime.now().isoformat()},
+        {"id": "node-2", "name": "Qualitative Analysis", "status": "concept", "createdAt": datetime.now().isoformat()},
+        {"id": "node-3", "name": "Data Collection Methods", "status": "concept", "createdAt": datetime.now().isoformat()},
+        {"id": "node-4", "name": "Theoretical Framework", "status": "concept", "createdAt": datetime.now().isoformat()},
+        {"id": "node-5", "name": "Literature Review", "status": "concept", "createdAt": datetime.now().isoformat()},
+        {"id": "node-6", "name": "Research Questions", "status": "concept", "createdAt": datetime.now().isoformat()},
+    ]
+    
+    # Generate initial edges based on concept overlap
+    sample_edges = []
+    for i, node1 in enumerate(sample_nodes):
+        words1 = set(node1["name"].lower().split())
+        for node2 in sample_nodes[i+1:]:
+            words2 = set(node2["name"].lower().split())
+            overlap = words1 & words2
+            if len(overlap) >= 2:
+                sample_edges.append({
+                    "id": f"edge-{len(sample_edges)+1}",
+                    "source": node1["id"],
+                    "target": node2["id"],
+                    "type": "semantic",
+                    "weight": 0.9,
+                    "reason": f"Shared concepts: {', '.join(overlap)}"
+                })
+            elif len(overlap) >= 1 and len(words1) >= 2 and len(words2) >= 2:
+                sample_edges.append({
+                    "id": f"edge-{len(sample_edges)+1}",
+                    "source": node1["id"],
+                    "target": node2["id"],
+                    "type": "related",
+                    "weight": 0.6,
+                    "reason": f"Related term: {list(overlap)[0]}"
+                })
+    
     return {
         "projects": [],
         "activeProjectId": None,
-        "projectSources": [],  # Sources scoped per project
-        "localLibrarySources": [],  # Approved links for library
-        "sourceLinkApprovals": [],  # Pending approvals
-        "proposals": [],  # Pending proposals from AI commands
-        "thoughtStates": [],  # Saved thought states
-        "pivots": [],  # Research pivots
-        "nodes": [],  # Graph nodes
-        "edges": [],  # Graph edges
-        "fragments": [],  # Source fragments
-        "windows": {  # Window state management
+        "projectSources": [],
+        "localLibrarySources": [],
+        "sourceLinkApprovals": [],
+        "proposals": [],
+        "thoughtStates": [],
+        "pivots": [],
+        "nodes": sample_nodes,
+        "edges": sample_edges,
+        "fragments": [],
+        "windows": {
             "focused": None,
             "minimized": []
         },
@@ -608,13 +644,36 @@ def generate_proposal(command, context, project_id=None):
 def generate_dialectical_response(command, proposal_type, project_id=None):
     """
     Jarvis acts as a reflective dialectical participant.
-    Uses real AI analysis from the analysis module.
+    Uses Gemini AI for intelligent responses when configured.
+    Falls back to analysis module or static responses.
     """
+    # First try Gemini AI (llm.py)
+    try:
+        from llm import generate_response, is_configured
+        if is_configured():
+            result = generate_response(command, {"proposal_type": proposal_type, "project_id": project_id})
+            if result.get("success"):
+                return {
+                    "analysis": result["text"],
+                    "pressure_points": [
+                        "What assumption does this embed?",
+                        "What would be the counter-argument?",
+                        "How does this fit the overall research arc?"
+                    ],
+                    "suggestions": [
+                        "Consider how this relates to your current pivots",
+                        "Check for existing concepts that might connect",
+                        "Think about the theoretical implications"
+                    ],
+                    "source": "gemini"
+                }
+    except Exception as e:
+        print(f"LLM error: {e}")
+    
+    # Fall back to analysis module
     try:
         from analysis import get_analyzer
         analyzer = get_analyzer()
-        
-        # Perform real analysis on the command
         analysis_result = analyzer.analyze_content(command, project_id=project_id, depth="critical")
         
         return analysis_result.get("dialectical_response", {
@@ -628,36 +687,39 @@ def generate_dialectical_response(command, proposal_type, project_id=None):
                 "Consider how this relates to your current pivots",
                 "Check for existing concepts that might connect",
                 "Think about the theoretical implications"
-            ]
+            ],
+            "source": "analysis"
         })
     except Exception as e:
         print(f"Analysis error: {e}")
-        # Fallback to static responses
-        responses = {
-            "add_node": "Adding nodes expands your conceptual landscape. Consider how this concept relates to existing nodes — does it bridge domains or extend current thinking?",
-            "add_edge": "Connections shape the argumentative structure. What type of relationship are you establishing? (causal, comparative, hierarchical)",
-            "create_pivot": "New pivots open research directions. What pressure point does this address? How does it interact with existing pivots?",
-            "archive_pivot": "Archiving frees cognitive space. Ensure this pivot has yielded its insights or that its closure is deliberate.",
-            "promote_pivot": "Promoting elevates a research thread. This signals increased confidence in this direction.",
-            "link_source": "Linking to library makes sources reusable across projects. Consider cross-project implications.",
-            "search": "Search reveals patterns. Note unexpected findings — they often indicate blind spots or new directions.",
-            "define_concept": "Definitions shape discourse. Be precise: what distinguishes this concept from similar ones?",
-            "analysis": "Analysis deepens understanding. Consider counter-arguments and alternative framings."
-        }
-        
-        return {
-            "analysis": responses.get(proposal_type, responses["analysis"]),
-            "pressure_points": [
-                "What assumption does this embed?",
-                "What would be the counter-argument?",
-                "How does this fit the overall research arc?"
-            ],
-            "suggestions": [
-                "Consider how this relates to your current pivots",
-                "Check for existing concepts that might connect",
-                "Think about the theoretical implications"
-            ]
-        }
+    
+    # Final fallback to static responses
+    responses = {
+        "add_node": "Adding nodes expands your conceptual landscape. Consider how this concept relates to existing nodes — does it bridge domains or extend current thinking?",
+        "add_edge": "Connections shape the argumentative structure. What type of relationship are you establishing? (causal, comparative, hierarchical)",
+        "create_pivot": "New pivots open research directions. What pressure point does this address? How does it interact with existing pivots?",
+        "archive_pivot": "Archiving frees cognitive space. Ensure this pivot has yielded its insights or that its closure is deliberate.",
+        "promote_pivot": "Promoting elevates a research thread. This signals increased confidence in this direction.",
+        "link_source": "Linking to library makes sources reusable across projects. Consider cross-project implications.",
+        "search": "Search reveals patterns. Note unexpected findings — they often indicate blind spots or new directions.",
+        "define_concept": "Definitions shape discourse. Be precise: what distinguishes this concept from similar ones?",
+        "analysis": "Analysis deepens understanding. Consider counter-arguments and alternative framings."
+    }
+    
+    return {
+        "analysis": responses.get(proposal_type, responses["analysis"]),
+        "pressure_points": [
+            "What assumption does this embed?",
+            "What would be the counter-argument?",
+            "How does this fit the overall research arc?"
+        ],
+        "suggestions": [
+            "Consider how this relates to your current pivots",
+            "Check for existing concepts that might connect",
+            "Think about the theoretical implications"
+        ],
+        "source": "static"
+    }
 
 @app.route('/api/proposals', methods=['GET'])
 def list_proposals():
