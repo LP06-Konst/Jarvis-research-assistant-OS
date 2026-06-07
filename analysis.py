@@ -323,5 +323,7 @@ def get_analyzer():
 
 # Helper to avoid circular import
 def get_vector_collection():
-    from rag import get_vector_collection as _get_col
+    from rag import get_vector_collection as _get_col, check_ml_available
+    if not check_ml_available():
+        return None
     return _get_col()

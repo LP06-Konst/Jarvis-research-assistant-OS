@@ -12,6 +12,20 @@ from typing import List, Dict, Any, Optional
 _chroma_client = None
 _embedding_model = None
 _vector_collection = None
+ML_AVAILABLE = None
+
+def check_ml_available():
+    """Check if ML libraries are available"""
+    global ML_AVAILABLE
+    if ML_AVAILABLE is None:
+        try:
+            import chromadb
+            from sentence_transformers import SentenceTransformer
+            ML_AVAILABLE = True
+        except ImportError as e:
+            print(f"ML libraries not available: {e}")
+            ML_AVAILABLE = False
+    return ML_AVAILABLE
 
 
 def get_chroma_client():
@@ -37,6 +51,8 @@ def get_vector_collection():
     """Get or initialize the main vector collection"""
     global _vector_collection
     if _vector_collection is None:
+        if not check_ml_available():
+            return None
         client = get_chroma_client()
         try:
             _vector_collection = client.get_collection("research_chunks")
@@ -118,70 +134,123 @@ def generate_embeddings(texts: List[str]) -> List[List[float]]:
 
 def store_chunks(source_id: str, project_id: str, chunks: List[Dict[str, Any]], metadata: Dict[str, Any] = None):
     """Store chunks in vector database with metadata"""
+    if not check_ml_available():
+        print("ML not available - storing text chunks only")
+        return []
+    
     collection = get_vector_collection()
-    model = get_embedding_model()
+    if not collection:
+        return []
     
-    texts = [chunk["text"] for chunk in chunks]
-    embeddings = model.encode(texts).tolist()
-    
-    ids = []
-    metadatas = []
-    
-    for i, chunk in enumerate(chunks):
-        chunk_id = f"{source_id}_{chunk['page']}_{i}"
-        ids.append(chunk_id)
+    try:
+        model = get_embedding_model()
         
-        meta = {
-            "source_id": source_id,
-            "project_id": project_id,
-            "page": chunk.get("page", 1),
-            "text": chunk["text"][:200],  # Store preview
-            "char_count": chunk.get("char_count", 0),
-        }
-        if metadata:
-            meta.update(metadata)
-        metadatas.append(meta)
-    
-    collection.add(
-        ids=ids,
-        embeddings=embeddings,
-        documents=texts,
-        metadatas=metadatas
-    )
-    
-    return ids
+        texts = [chunk["text"] for chunk in chunks]
+        embeddings = model.encode(texts).tolist()
+        
+        ids = []
+        metadatas = []
+        
+        for i, chunk in enumerate(chunks):
+            chunk_id = f"{source_id}_{chunk['page']}_{i}"
+            ids.append(chunk_id)
+            
+            meta = {
+                "source_id": source_id,
+                "project_id": project_id,
+                "page": chunk.get("page", 1),
+                "text": chunk["text"][:200],  # Store preview
+                "char_count": chunk.get("char_count", 0),
+            }
+            if metadata:
+                meta.update(metadata)
+            metadatas.append(meta)
+        
+        collection.add(
+            ids=ids,
+            embeddings=embeddings,
+            documents=texts,
+            metadatas=metadatas
+        )
+        
+        return ids
+    except Exception as e:
+        print(f"Error storing chunks: {e}")
+        return []
 
 
 def semantic_search(query: str, project_id: Optional[str] = None, top_k: int = 5) -> List[Dict[str, Any]]:
     """Perform semantic search against stored chunks"""
+    if not check_ml_available():
+        # Fallback to keyword search
+        return text_search(query, project_id, top_k)
+    
     collection = get_vector_collection()
-    model = get_embedding_model()
-    
-    query_embedding = model.encode([query]).tolist()[0]
-    
-    where_filter = {"project_id": project_id} if project_id else None
+    if not collection:
+        # Fallback to keyword search
+        return text_search(query, project_id, top_k)
     
     try:
-        results = collection.query(
-            query_embeddings=[query_embedding],
-            n_results=top_k,
-            where=where_filter
-        )
+        model = get_embedding_model()
         
-        formatted_results = []
-        if results and results.get('documents'):
-            for i, doc in enumerate(results['documents'][0]):
-                formatted_results.append({
-                    "text": doc,
-                    "page": results['metadatas'][0][i].get('page', 1),
-                    "source_id": results['metadatas'][0][i].get('source_id'),
-                    "distance": results.get('distances', [[]])[0][i] if results.get('distances') else 0
-                })
+        query_embedding = model.encode([query]).tolist()[0]
         
-        return formatted_results
+        where_filter = {"project_id": project_id} if project_id else None
+        
+        try:
+            results = collection.query(
+                query_embeddings=[query_embedding],
+                n_results=top_k,
+                where=where_filter
+            )
+            
+            formatted_results = []
+            if results and results.get('documents'):
+                for i, doc in enumerate(results['documents'][0]):
+                    formatted_results.append({
+                        "text": doc,
+                        "page": results['metadatas'][0][i].get('page', 1),
+                        "source_id": results['metadatas'][0][i].get('source_id'),
+                        "distance": results.get('distances', [[]])[0][i] if results.get('distances') else 0
+                    })
+            
+            return formatted_results
+        except Exception as e:
+            print(f"Search error: {e}")
+            return text_search(query, project_id, top_k)
     except Exception as e:
-        print(f"Search error: {e}")
-        return []
+        print(f"Semantic search error: {e}")
+        return text_search(query, project_id, top_k)
+
+
+def text_search(query: str, project_id: Optional[str] = None, top_k: int = 5) -> List[Dict[str, Any]]:
+    """Fallback text-based search when ML is not available"""
+    results = []
+    query_words = query.lower().split()
+    
+    try:
+        import json
+        if os.path.exists('data/state.json'):
+            with open('data/state.json', 'r') as f:
+                state_data = json.load(f)
+            
+            for source in state_data.get('projectSources', []):
+                if project_id and source.get('projectId') != project_id:
+                    continue
+                
+                source_text = source.get('name', '').lower()
+                match_count = sum(1 for word in query_words if word in source_text)
+                if match_count > 0:
+                    results.append({
+                        "text": f"Source: {source.get('name', 'Unknown')} - Click to view in project",
+                        "page": 1,
+                        "source_id": source.get('id'),
+                        "distance": 1.0 - (match_count / len(query_words))
+                    })
+    except Exception as e:
+        print(f"Text search error: {e}")
+    
+    return results[:top_k]
 
 
 def summarize_chunk(text: str, max_length: int = 200) -> str:
@@ -270,26 +339,38 @@ def detect_sections(text: str) -> List[Dict[str, str]]:
 
 def compute_similarity(text1: str, text2: str) -> float:
     """Compute cosine similarity between two texts"""
-    model = get_embedding_model()
-    emb1 = model.encode([text1])[0]
-    emb2 = model.encode([text2])[0]
+    if not check_ml_available():
+        return 0.0
     
-    # Cosine similarity
-    dot_product = sum(a * b for a, b in zip(emb1, emb2))
-    norm1 = sum(a * a for a in emb1) ** 0.5
-    norm2 = sum(a * a for a in emb2) ** 0.5
-    
-    return dot_product / (norm1 * norm2) if norm1 * norm2 > 0 else 0
+    try:
+        model = get_embedding_model()
+        emb1 = model.encode([text1])[0]
+        emb2 = model.encode([text2])[0]
+        
+        # Cosine similarity
+        dot_product = sum(a * b for a, b in zip(emb1, emb2))
+        norm1 = sum(a * a for a in emb1) ** 0.5
+        norm2 = sum(a * a for a in emb2) ** 0.5
+        
+        return dot_product / (norm1 * norm2) if norm1 * norm2 > 0 else 0
+    except:
+        return 0.0
 
 
 def find_related_chunks(source_id: str, chunk_text: str, threshold: float = 0.7) -> List[Dict[str, Any]]:
     """Find related chunks from other sources based on similarity"""
-    collection = get_vector_collection()
-    model = get_embedding_model()
+    if not check_ml_available():
+        return []
     
-    query_embedding = model.encode([chunk_text]).tolist()[0]
+    collection = get_vector_collection()
+    if not collection:
+        return []
     
     try:
+        model = get_embedding_model()
+        
+        query_embedding = model.encode([chunk_text]).tolist()[0]
+        
         results = collection.query(
             query_embeddings=[query_embedding],
             n_results=5,
