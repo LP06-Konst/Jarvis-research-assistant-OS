@@ -28,27 +28,44 @@ jobs:
       - name: Deploy to Render
         if: github.ref == 'refs/heads/main'
         run: |
-          # Get or create the Render blueprint
-          curl -s -X GET "https://api.render.com/v1/blueprints" \
-            -H "Authorization: Bearer $RENDER_API_KEY" \
-            -H "Content-Type: application/json"
+          # List services to find the existing one
+          SERVICES=$(curl -s "https://api.render.com/v1/services" \
+            -H "Authorization: Bearer $RENDER_API_KEY")
           
-          # Create or update service via Render API
-          curl -s -X POST "https://api.render.com/v1/services" \
-            -H "Authorization: Bearer $RENDER_API_KEY" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "name": "jarvis-research-os",
-              "type": "web",
-              "region": "oregon",
-              "plan": "free",
-              "buildCommand": "pip install -r requirements.txt",
-              "startCommand": "python server.py",
-              "envVars": [
-                {"key": "HOST", "value": "0.0.0.0"},
-                {"key": "PORT", "value": "10000"}
-              ]
-            }'
+          # Find the service ID for jarvis-research-os
+          SERVICE_ID=$(echo "$SERVICES" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for s in (data if isinstance(data, list) else []):
+    if 'jarvis' in s.get('name', '').lower():
+        print(s.get('id'))
+        break
+")
+          
+          if [ -n "$SERVICE_ID" ]; then
+            # Trigger deploy for existing service
+            curl -s -X POST "https://api.render.com/v1/services/$SERVICE_ID/deploys" \
+              -H "Authorization: Bearer $RENDER_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d '{"clearCache": false}'
+          else
+            # Create new service if not found
+            curl -s -X POST "https://api.render.com/v1/services" \
+              -H "Authorization: Bearer $RENDER_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "name": "jarvis-research-os",
+                "type": "web",
+                "region": "oregon",
+                "plan": "free",
+                "buildCommand": "pip install -r requirements.txt",
+                "startCommand": "python server.py",
+                "envVars": [
+                  {"key": "HOST", "value": "0.0.0.0"},
+                  {"key": "PORT", "value": "10000"}
+                ]
+              }'
+          fi
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
       
