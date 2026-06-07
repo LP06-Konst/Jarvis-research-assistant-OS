@@ -123,6 +123,77 @@ def allowed_file(filename):
 def generate_id():
     return str(uuid.uuid4())[:8]
 
+def auto_generate_edges(new_node: Dict) -> List[Dict]:
+    """
+    Auto-generate edges between new node and existing nodes based on
+    semantic similarity of node names and content.
+    """
+    edges = []
+    
+    # Keyword-based similarity scoring
+    new_words = set(new_node.get("name", "").lower().split())
+    
+    for existing_node in state["nodes"]:
+        if existing_node["id"] == new_node["id"]:
+            continue
+        
+        existing_words = set(existing_node.get("name", "").lower().split())
+        
+        # Calculate word overlap
+        overlap = new_words & existing_words
+        
+        # Strong connection: significant word overlap
+        if len(overlap) >= 2:
+            edges.append({
+                "id": generate_id(),
+                "source": new_node["id"],
+                "target": existing_node["id"],
+                "type": "semantic",
+                "weight": 0.9,
+                "reason": f"Shared concepts: {', '.join(overlap)}"
+            })
+        # Medium connection: some word match
+        elif len(overlap) == 1 and len(new_words) > 1:
+            edges.append({
+                "id": generate_id(),
+                "source": new_node["id"],
+                "target": existing_node["id"],
+                "type": "related",
+                "weight": 0.6,
+                "reason": f"Related term: {list(overlap)[0]}"
+            })
+    
+    return edges
+
+def suggest_node_connections(node_id: str) -> List[Dict]:
+    """
+    Suggest connections for a specific node based on graph analysis.
+    Returns top 5 potential connections with reasoning.
+    """
+    node = next((n for n in state["nodes"] if n["id"] == node_id), None)
+    if not node:
+        return []
+    
+    suggestions = []
+    node_words = set(node.get("name", "").lower().split())
+    
+    for other in state["nodes"]:
+        if other["id"] == node_id:
+            continue
+        
+        other_words = set(other.get("name", "").lower().split())
+        overlap = node_words & other_words
+        
+        if overlap:
+            suggestions.append({
+                "node_id": other["id"],
+                "node_name": other["name"],
+                "shared_concepts": list(overlap),
+                "connection_type": "strong" if len(overlap) >= 2 else "related"
+            })
+    
+    return sorted(suggestions, key=lambda x: len(x["shared_concepts"]), reverse=True)[:5]
+
 # ============================================
 # API ROUTES
 # ============================================
@@ -622,25 +693,32 @@ def reject_proposal(proposal_id):
 def commit_proposal(proposal):
     """
     Commit approved proposal changes to project state.
+    Auto-generates edges between related nodes based on content similarity.
     """
     for change in proposal.get("changes", []):
         change_type = change.get("type")
         
         if change_type == "add_node":
-            node = change.get("name", "New Node")
+            node_name = change.get("name", "New Node")
             node_data = {
                 "id": generate_id(),
-                "name": node,
+                "name": node_name,
                 "status": change.get("status", "concept"),
                 "createdAt": datetime.now().isoformat()
             }
             state["nodes"].append(node_data)
+            
+            # Auto-generate edges based on semantic similarity
+            auto_edges = auto_generate_edges(node_data)
+            for edge in auto_edges:
+                state["edges"].append(edge)
             
             # Add to active project if exists
             if state["activeProjectId"]:
                 project = next((p for p in state["projects"] if p["id"] == state["activeProjectId"]), None)
                 if project:
                     project.setdefault("nodes", []).append(node_data)
+                    project.setdefault("edges", []).extend(auto_edges)
                     
         elif change_type == "add_edge":
             edge = {
@@ -1049,6 +1127,17 @@ def analyze_content_endpoint():
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/nodes/<node_id>/connections', methods=['GET'])
+def get_node_connections(node_id):
+    """Get suggested connections for a node"""
+    suggestions = suggest_node_connections(node_id)
+    return jsonify({
+        "node_id": node_id,
+        "suggestions": suggestions,
+        "count": len(suggestions)
+    })
 
 
 # ============================================
