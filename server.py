@@ -1140,7 +1140,7 @@ def get_node_connections(node_id):
     })
 
 
-@app.route('/api/edges/regenerate', methods=['POST'])
+@app.route('/api/graph/connect', methods=['POST'])
 def regenerate_edges():
     """
     Regenerate all edges between nodes based on semantic similarity.
