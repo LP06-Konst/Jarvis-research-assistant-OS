@@ -4,8 +4,6 @@ name: Deploy to Render
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -16,59 +14,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      
-      - name: Install dependencies
+      - name: Trigger Render Deploy
         run: |
-          pip install -r requirements.txt
-      
-      - name: Deploy to Render
-        if: github.ref == 'refs/heads/main'
-        run: |
-          # List services to find the existing one
-          SERVICES=$(curl -s "https://api.render.com/v1/services" \
-            -H "Authorization: Bearer $RENDER_API_KEY")
-          
-          # Find the service ID for jarvis-research-os
-          SERVICE_ID=$(echo "$SERVICES" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-for s in (data if isinstance(data, list) else []):
-    if 'jarvis' in s.get('name', '').lower():
-        print(s.get('id'))
-        break
-")
-          
-          if [ -n "$SERVICE_ID" ]; then
-            # Trigger deploy for existing service
-            curl -s -X POST "https://api.render.com/v1/services/$SERVICE_ID/deploys" \
-              -H "Authorization: Bearer $RENDER_API_KEY" \
-              -H "Content-Type: application/json" \
-              -d '{"clearCache": false}'
-          else
-            # Create new service if not found
-            curl -s -X POST "https://api.render.com/v1/services" \
-              -H "Authorization: Bearer $RENDER_API_KEY" \
-              -H "Content-Type: application/json" \
-              -d '{
-                "name": "jarvis-research-os",
-                "type": "web",
-                "region": "oregon",
-                "plan": "free",
-                "buildCommand": "pip install -r requirements.txt",
-                "startCommand": "python server.py",
-                "envVars": [
-                  {"key": "HOST", "value": "0.0.0.0"},
-                  {"key": "PORT", "value": "10000"}
-                ]
-              }'
-          fi
-        env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-      
-      - name: Verify deployment
-        run: |
-          echo "Deployment triggered. Check Render dashboard: https://dashboard.render.com"
+          echo "Pushing to GitHub triggers Render auto-deploy"
+          echo "If Render isn't auto-deploying, check:"
+          echo "1. Render dashboard -> Service -> Settings -> Git"
+          echo "2. Ensure 'Auto-deploy from GitHub' is enabled"
+          echo "3. Check the branch matches (main)"
