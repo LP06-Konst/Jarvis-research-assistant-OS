@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jarvis Research OS</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Project Launcher (First Screen) -->
+        <div id="projectLauncher" class="screen active">
+            <div class="launcher-container">
+                <div class="launcher-header">
+                    <h1 class="launcher-title">Jarvis</h1>
+                    <p class="launcher-subtitle">Research OS</p>
+                </div>
+                
+                <div class="launcher-actions">
+                    <button id="startNewProject" class="launcher-btn primary">
+                        <span class="btn-icon">+</span>
+                        <span class="btn-text">Start Research Project</span>
+                    </button>
+                    
+                    <button id="openRecentProjects" class="launcher-btn secondary">
+                        <span class="btn-icon">◷</span>
+                        <span class="btn-text">Open Recent</span>
+                    </button>
+                    
+                    <button id="inspectLibrary" class="launcher-btn secondary">
+                        <span class="btn-icon">☰</span>
+                        <span class="btn-text">Local Library</span>
+                    </button>
+                </div>
+                
+                <div id="recentProjectsList" class="recent-projects hidden">
+                    <!-- Populated dynamically -->
+                </div>
+                
+                <div id="libraryView" class="library-view hidden">
+                    <h3>Local Library Sources</h3>
+                    <div id="librarySourcesList"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Source Onboarding -->
+        <div id="sourceOnboarding" class="screen">
+            <div class="onboarding-container">
+                <div class="onboarding-header">
+                    <button id="backToLauncher" class="back-btn">← Back</button>
+                    <h2 id="projectName">New Project</h2>
+                </div>
+                
+                <div class="source-upload-area">
+                    <div class="upload-zone" id="dropZone">
+                        <p>Drop PDF files here or click to upload</p>
+                        <input type="file" id="fileInput" accept=".pdf" multiple hidden>
+                    </div>
+                    
+                    <div class="uploaded-sources" id="uploadedSourcesList">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+                
+                <div class="onboarding-actions">
+                    <button id="enterWorkbench" class="launcher-btn primary">
+                        Enter Workbench
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Workbench -->
+        <div id="workbench" class="screen">
+            <!-- Dock Bar -->
+            <div id="dockBar" class="dock-bar">
+                <button class="dock-btn" data-dock="left" title="Toggle Left Panel">
+                    <span>◰</span>
+                </button>
+                <button class="dock-btn" data-dock="right" title="Toggle Right Panel">
+                    <span>◳</span>
+                </button>
+                <button class="dock-btn" data-dock="bottom" title="Toggle Bottom Panel">
+                    <span>◱</span>
+                </button>
+                <div class="dock-spacer"></div>
+                <button id="projectSwitcher" class="dock-btn" title="Switch Project">
+                    <span>⚙</span>
+                </button>
+            </div>
+            
+            <!-- Dock Zones -->
+            <div id="dockManager" class="dock-manager">
+                <!-- Left Zone -->
+                <div id="leftZone" class="dock-zone left">
+                    <div class="zone-header">
+                        <span>Sources</span>
+                        <button class="zone-minimize">−</button>
+                    </div>
+                    <div class="zone-content" id="sourceTray">
+                        <!-- Source tray content -->
+                    </div>
+                </div>
+                
+                <!-- Center Zone -->
+                <div id="centerZone" class="dock-zone center">
+                    <!-- Graph Window -->
+                    <div id="graphWindow" class="dock-window">
+                        <div class="window-header">
+                            <span class="window-title">Research Graph</span>
+                            <div class="window-controls">
+                                <button class="window-minimize">−</button>
+                                <button class="window-close">×</button>
+                            </div>
+                        </div>
+                        <div class="window-content" id="graphContainer">
+                            <div id="graphCanvas" class="graph-canvas">
+                                <!-- Graph nodes rendered here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tabs Area for Generated Preview Tabs -->
+                    <div id="tabsArea" class="tabs-area">
+                        <!-- Generated preview tabs -->
+                    </div>
+                </div>
+                
+                <!-- Right Zone -->
+                <div id="rightZone" class="dock-zone right">
+                    <!-- Command Console (AI Chat Interface) -->
+                    <div id="commandConsole" class="dock-window">
+                        <div class="window-header">
+                            <span class="window-title">Jarvis</span>
+                            <div class="window-controls">
+                                <button class="window-minimize">−</button>
+                            </div>
+                        </div>
+                        <div class="window-content">
+                            <div id="conversationLog" class="conversation-log">
+                                <!-- Conversation messages -->
+                            </div>
+                            <div id="proposalArea" class="proposal-area hidden">
+                                <!-- Generated proposals -->
+                            </div>
+                            <div class="command-input-area">
+                                <input type="text" id="commandInput" placeholder="Enter command..." class="command-input">
+                                <button id="sendCommand" class="send-btn">→</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Notes/Thought States -->
+                    <div id="thoughtStatesWindow" class="dock-window hidden">
+                        <div class="window-header">
+                            <span class="window-title">Thought States</span>
+                            <div class="window-controls">
+                                <button class="window-minimize">−</button>
+                            </div>
+                        </div>
+                        <div class="window-content" id="thoughtStatesList">
+                            <!-- Thought states -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bottom Zone -->
+                <div id="bottomZone" class="dock-zone bottom hidden">
+                    <!-- Pivots Window -->
+                    <div id="pivotsWindow" class="dock-window">
+                        <div class="window-header">
+                            <span class="window-title">Research Pivots</span>
+                            <div class="window-controls">
+                                <button class="window-add" title="Create Pivot">+</button>
+                                <button class="window-minimize">−</button>
+                            </div>
+                        </div>
+                        <div class="window-content" id="pivotsList">
+                            <!-- Pivots -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Node Card Overlay -->
+        <div id="nodeCardOverlay" class="overlay hidden">
+            <div id="nodeCard" class="node-card">
+                <div class="node-card-header">
+                    <h3 id="nodeCardTitle">Concept Name</h3>
+                    <button id="closeNodeCard" class="close-btn">×</button>
+                </div>
+                <div class="node-card-content">
+                    <div class="node-info">
+                        <div class="info-row">
+                            <span class="info-label">Status:</span>
+                            <span id="nodeStatus" class="info-value">concept</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Domain:</span>
+                            <span id="nodeDomain" class="info-value">—</span>
+                        </div>
+                    </div>
+                    
+                    <div class="connected-concepts">
+                        <h4>Connected Concepts</h4>
+                        <div id="connectedList">
+                            <!-- Connected nodes -->
+                        </div>
+                    </div>
+                    
+                    <div class="related-pivots">
+                        <h4>Related Pivots</h4>
+                        <div id="relatedPivotsList">
+                            <!-- Related pivots -->
+                        </div>
+                    </div>
+                    
+                    <div class="source-references">
+                        <h4>Source References</h4>
+                        <div id="sourceRefsList">
+                            <!-- Fragment references -->
+                        </div>
+                    </div>
+                    
+                    <div class="node-quick-commands">
+                        <h4>Actions</h4>
+                        <div class="quick-commands">
+                            <button class="quick-cmd" data-action="bridge">Bridge</button>
+                            <button class="quick-cmd" data-action="formalise">Formalise</button>
+                            <button class="quick-cmd" data-action="compare">Compare</button>
+                            <button class="quick-cmd" data-action="mark">Mark Status</button>
+                            <button class="quick-cmd" data-action="history">Open History</button>
+                        </div>
+                    </div>
+                    
+                    <div class="node-hyperlinks">
+                        <h4>Navigate</h4>
+                        <div class="hyperlinks">
+                            <a href="#" class="node-link" data-action="open-generated">Open Generated Windows</a>
+                            <a href="#" class="node-link" data-action="open-fragment">Source Fragments</a>
+                            <a href="#" class="node-link" data-action="open-pivot">Pivot Cards</a>
+                            <a href="#" class="node-link" data-action="open-thoughts">Saved Thought States</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Fragment Window Overlay -->
+        <div id="fragmentOverlay" class="overlay hidden">
+            <div id="fragmentWindow" class="fragment-window">
+                <div class="fragment-header">
+                    <div class="fragment-info">
+                        <h3 id="fragmentTitle">Fragment</h3>
+                        <span id="fragmentSource" class="fragment-source">Source Name</span>
+                    </div>
+                    <div class="fragment-controls">
+                        <button id="prevPage" class="page-nav">‹ Prev</button>
+                        <span id="pageIndicator">Page 1</span>
+                        <button id="nextPage" class="page-nav">Next ›</button>
+                        <button id="closeFragment" class="close-btn">×</button>
+                    </div>
+                </div>
+                <div class="fragment-content">
+                    <div class="fragment-text" id="fragmentText">
+                        <!-- Retrieved passage text -->
+                    </div>
+                    <div class="pdf-viewer" id="pdfViewer">
+                        <iframe id="pdfFrame" class="pdf-frame"></iframe>
+                    </div>
+                </div>
+                <div class="fragment-actions">
+                    <button class="frag-action" data-action="quote">Quote into Workspace</button>
+                    <button class="frag-action" data-action="open-source">Open Source Window</button>
+                    <button class="frag-action" data-action="ask-jarvis">Ask Jarvis</button>
+                    <button class="frag-action" data-action="save-thought">Save as Thought State</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add Node Button -->
+        <button id="addNodeBtn" class="floating-action hidden" title="Add Node">+</button>
+    </div>
+    
+    <script>
+        // ============================================
+        // JARVIS RESEARCH OS - Frontend Application
+        // ============================================
+        
+        const API_BASE = '';
+        
+        // State management
+        let state = {
+            projects: [],
+            activeProjectId: null,
+            projectSources: [],
+            localLibrarySources: [],
+            sourceLinkApprovals: [],
+            proposals: [],
+            thoughtStates: [],
+            pivots: [],
+            nodes: [],
+            edges: [],
+            fragments: [],
+            windows: {
+                focused: null,
+                minimized: []
+            },
+            dockZones: {
+                left: ['sourceTray'],
+                center: ['graphWindow'],
+                right: ['commandConsole'],
+                bottom: []
+            }
+        };
+        
+        // Current UI state
+        let currentView = 'launcher'; // launcher, onboarding, workbench
+        let currentProject = null;
+        let currentNodeCard = null;
+        let currentFragment = null;
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadState();
+            setupEventListeners();
+            render();
+        });
+        
+        async function loadState() {
+            try {
+                const response = await fetch(`${API_BASE}/api/state`);
+                if (response.ok) {
+                    const serverState = await response.json();
+                    state = { ...state, ...serverState };
+                }
+            } catch (error) {
+                console.log('Using initial state');
+            }
+        }
+        
+        async function saveState() {
+            try {
+                await fetch(`${API_BASE}/api/state`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(state)
+                });
+            } catch (error) {
+                console.error('Failed to save state:', error);
+            }
+        }
+        
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        
+        function setupEventListeners() {
+            // Project Launcher
+            document.getElementById('startNewProject').addEventListener('click', startNewProject);
+            document.getElementById('openRecentProjects').addEventListener('click', toggleRecentProjects);
+            document.getElementById('inspectLibrary').addEventListener('click', toggleLibraryView);
+            
+            // Source Onboarding
+            document.getElementById('backToLauncher').addEventListener('click', backToLauncher);
+            document.getElementById('dropZone').addEventListener('click', () => document.getElementById('fileInput').click());
+            document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+            document.getElementById('enterWorkbench').addEventListener('click', enterWorkbench);
+            
+            // Dock Bar
+            document.querySelectorAll('.dock-btn[data-dock]').forEach(btn => {
+                btn.addEventListener('click', () => toggleDockZone(btn.dataset.dock));
+            });
+            document.getElementById('projectSwitcher').addEventListener('click', showProjectSwitcher);
+            
+            // Command Console
+            document.getElementById('sendCommand').addEventListener('click', sendCommand);
+            document.getElementById('commandInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendCommand();
+            });
+            
+            // Node Card
+            document.getElementById('closeNodeCard').addEventListener('click', closeNodeCard);
+            document.querySelectorAll('.quick-cmd').forEach(btn => {
+                btn.addEventListener('click', () => handleNodeAction(btn.dataset.action));
+            });
+            
+            // Fragment Window
+            document.getElementById('closeFragment').addEventListener('click', closeFragment);
+            document.getElementById('prevPage').addEventListener('click', () => navigatePage(-1));
+            document.getElementById('nextPage').addEventListener('click', () => navigatePage(1));
+            document.querySelectorAll('.frag-action').forEach(btn => {
+                btn.addEventListener('click', () => handleFragmentAction(btn.dataset.action));
+            });
+            
+            // Add Node Button
+            document.getElementById('addNodeBtn').addEventListener('click', showAddNodeDialog);
+            
+            // Window minimize/close
+            document.querySelectorAll('.window-minimize').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const window = e.target.closest('.dock-window');
+                    minimizeWindow(window.id);
+                });
+            });
+            
+            document.querySelectorAll('.window-close').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const window = e.target.closest('.dock-window');
+                    closeWindow(window.id);
+                });
+            });
+            
+            // Zone minimize
+            document.querySelectorAll('.zone-minimize').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const zone = e.target.closest('.dock-zone');
+                    minimizeZone(zone.id);
+                });
+            });
+            
+            // Pivots
+            document.querySelector('.window-add').addEventListener('click', createPivot);
+        }
+        
+        // ============================================
+        // NAVIGATION & SCREENS
+        // ============================================
+        
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+            currentView = screenId;
+        }
+        
+        function showProjectNameModal() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.id = 'projectNameModal';
+            modal.innerHTML = `
+                <div class="modal-content project-modal">
+                    <h3>New Research Project</h3>
+                    <input type="text" id="projectNameInput" placeholder="Project name" value="New Research Project">
+                    <div class="modal-actions">
+                        <button id="cancelProject" class="cancel-btn">Cancel</button>
+                        <button id="confirmProject" class="confirm-btn">Create</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            document.getElementById('projectNameInput').focus();
+            document.getElementById('projectNameInput').select();
+            
+            document.getElementById('cancelProject').addEventListener('click', () => modal.remove());
+            document.getElementById('confirmProject').addEventListener('click', () => {
+                const name = document.getElementById('projectNameInput').value.trim();
+                if (name) {
+                    modal.remove();
+                    createProject(name);
+                }
+            });
+            
+            document.getElementById('projectNameInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const name = document.getElementById('projectNameInput').value.trim();
+                    if (name) {
+                        modal.remove();
+                        createProject(name);
+                    }
+                }
+            });
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        }
+        
+        async function createProject(projectName) {
+            try {
+                const response = await fetch(`${API_BASE}/api/projects`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: projectName })
+                });
+                const project = await response.json();
+                state.projects.push(project);
+                state.activeProjectId = project.id;
+                currentProject = project;
+                
+                document.getElementById('projectName').textContent = projectName;
+                showScreen('sourceOnboarding');
+            } catch (error) {
+                console.error('Failed to create project:', error);
+            }
+        }
+        
+        async function startNewProject() {
+            showProjectNameModal();
+        }
+        
+        function toggleRecentProjects() {
+            const list = document.getElementById('recentProjectsList');
+            list.classList.toggle('hidden');
+            document.getElementById('libraryView').classList.add('hidden');
+            
+            if (!list.classList.contains('hidden')) {
+                renderRecentProjects();
+            }
+        }
+        
+        function renderRecentProjects() {
+            const list = document.getElementById('recentProjectsList');
+            if (state.projects.length === 0) {
+                list.innerHTML = '<p class="empty-state">No recent projects</p>';
+                return;
+            }
+            
+            list.innerHTML = state.projects.map(project => `
+                <div class="recent-project-item" data-id="${project.id}">
+                    <span class="project-name">${project.name}</span>
+                    <span class="project-date">${formatDate(project.createdAt)}</span>
+                </div>
+            `).join('');
+            
+            list.querySelectorAll('.recent-project-item').forEach(item => {
+                item.addEventListener('click', () => openProject(item.dataset.id));
+            });
+        }
+        
+        async function openProject(projectId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/projects/${projectId}`);
+                const project = await response.json();
+                state.activeProjectId = projectId;
+                currentProject = project;
+                
+                // Set as active project on server
+                await fetch(`${API_BASE}/api/projects/active`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ projectId })
+                });
+                
+                // Check if project has sources
+                if (project.sources && project.sources.length > 0) {
+                    enterWorkbench();
+                } else {
+                    document.getElementById('projectName').textContent = project.name;
+                    showScreen('sourceOnboarding');
+                }
+            } catch (error) {
+                console.error('Failed to open project:', error);
+            }
+        }
+        
+        function toggleLibraryView() {
+            const view = document.getElementById('libraryView');
+            view.classList.toggle('hidden');
+            document.getElementById('recentProjectsList').classList.add('hidden');
+            
+            if (!view.classList.contains('hidden')) {
+                renderLibrarySources();
+            }
+        }
+        
+        function renderLibrarySources() {
+            const list = document.getElementById('librarySourcesList');
+            if (state.localLibrarySources.length === 0) {
+                list.innerHTML = '<p class="empty-state">No sources in library</p>';
+                return;
+            }
+            
+            list.innerHTML = state.localLibrarySources.map(sourceId => {
+                const source = state.projectSources.find(s => s.id === sourceId);
+                return source ? `
+                    <div class="library-source-item" data-id="${source.id}">
+                        <span class="source-name">${source.name}</span>
+                    </div>
+                ` : '';
+            }).join('');
+        }
+        
+        function backToLauncher() {
+            showScreen('projectLauncher');
+        }
+        
+        async function enterWorkbench() {
+            showScreen('workbench');
+            document.getElementById('addNodeBtn').classList.remove('hidden');
+            await loadProjectData();
+            renderWorkbench();
+        }
+        
+        async function loadProjectData() {
+            if (!state.activeProjectId) return;
+            
+            try {
+                // Load project sources
+                const sourcesRes = await fetch(`${API_BASE}/api/projects/${state.activeProjectId}/sources`);
+                state.projectSources = await sourcesRes.json();
+                
+                // Load nodes
+                const nodesRes = await fetch(`${API_BASE}/api/nodes`);
+                state.nodes = await nodesRes.json();
+                
+                // Load pivots
+                const pivotsRes = await fetch(`${API_BASE}/api/pivots`);
+                state.pivots = await pivotsRes.json();
+                
+                // Load thought states
+                const thoughtsRes = await fetch(`${API_BASE}/api/thought-states`);
+                state.thoughtStates = await thoughtsRes.json();
+                
+            } catch (error) {
+                console.error('Failed to load project data:', error);
+            }
+        }
+        
+        // ============================================
+        // FILE UPLOAD
+        // ============================================
+        
+        async function handleFileUpload(e) {
+            const files = e.target.files;
+            if (!files.length) return;
+            
+            for (const file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('projectId', state.activeProjectId);
+                
+                try {
+                    const response = await fetch(`${API_BASE}/api/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const source = await response.json();
+                    state.projectSources.push(source);
+                } catch (error) {
+                    console.error('Upload failed:', error);
+                }
+            }
+            
+            renderUploadedSources();
+        }
+        
+        function renderUploadedSources() {
+            const list = document.getElementById('uploadedSourcesList');
+            const projectSources = state.projectSources.filter(s => s.projectId === state.activeProjectId);
+            
+            if (projectSources.length === 0) {
+                list.innerHTML = '';
+                return;
+            }
+            
+            list.innerHTML = projectSources.map(source => `
+                <div class="source-item" data-id="${source.id}">
+                    <span class="source-icon">📄</span>
+                    <span class="source-name">${source.name}</span>
+                    <button class="source-remove" data-id="${source.id}">×</button>
+                </div>
+            `).join('');
+            
+            list.querySelectorAll('.source-remove').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    await removeSource(btn.dataset.id);
+                });
+            });
+        }
+        
+        async function removeSource(sourceId) {
+            try {
+                await fetch(`${API_BASE}/api/sources/${sourceId}`, { method: 'DELETE' });
+                state.projectSources = state.projectSources.filter(s => s.id !== sourceId);
+                renderUploadedSources();
+                document.getElementById('enterWorkbench').disabled = state.projectSources.length === 0;
+            } catch (error) {
+                console.error('Failed to remove source:', error);
+            }
+        }
+        
+        // ============================================
+        // DOCKABLE WINDOW SYSTEM
+        // ============================================
+        
+        function toggleDockZone(zone) {
+            const zoneEl = document.getElementById(`${zone}Zone`);
+            if (zoneEl) {
+                zoneEl.classList.toggle('hidden');
+            }
+        }
+        
+        function minimizeWindow(windowId) {
+            const windowEl = document.getElementById(windowId);
+            if (windowEl) {
+                windowEl.classList.toggle('minimized');
+            }
+        }
+        
+        function closeWindow(windowId) {
+            const windowEl = document.getElementById(windowId);
+            if (windowEl) {
+                windowEl.classList.add('hidden');
+            }
+        }
+        
+        function minimizeZone(zoneId) {
+            const zoneEl = document.getElementById(zoneId);
+            if (zoneEl) {
+                zoneEl.classList.toggle('minimized');
+            }
+        }
+        
+        function showProjectSwitcher() {
+            const projects = state.projects.map(p => 
+                `<div class="project-switcher-item" data-id="${p.id}">${p.name}</div>`
+            ).join('');
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>Switch Project</h3>
+                    <div class="project-list">${projects || '<p class="empty-state">No projects</p>'}</div>
+                    <button class="modal-close">Cancel</button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
+            modal.querySelectorAll('.project-switcher-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    openProject(item.dataset.id);
+                    modal.remove();
+                });
+            });
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        }
+        
+        // ============================================
+        // COMMAND CONSOLE (AI Chat Interface - CORE)
+        // ============================================
+        
+        async function sendCommand() {
+            const input = document.getElementById('commandInput');
+            const command = input.value.trim();
+            if (!command) return;
+            
+            input.value = '';
+            
+            // Add user message to conversation
+            addMessage('user', command);
+            
+            // Process command and create proposal
+            try {
+                const response = await fetch(`${API_BASE}/api/command`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        command,
+                        context: {
+                            projectId: state.activeProjectId,
+                            nodes: state.nodes,
+                            pivots: state.pivots
+                        }
+                    })
+                });
+                
+                const proposal = await response.json();
+                state.proposals.push(proposal);
+                
+                // Add Jarvis response
+                addMessage('jarvis', proposal.dialecticalResponse.analysis);
+                
+                // Show proposal area with preview tabs
+                showProposal(proposal);
+                
+            } catch (error) {
+                console.error('Command failed:', error);
+                addMessage('jarvis', 'I encountered an error processing your command. Please try again.');
+            }
+        }
+        
+        function addMessage(type, content) {
+            const log = document.getElementById('conversationLog');
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            
+            if (type === 'user') {
+                message.innerHTML = `<div class="message-content">${escapeHtml(content)}</div>`;
+            } else {
+                message.innerHTML = `
+                    <div class="message-label">Jarvis</div>
+                    <div class="message-content">${escapeHtml(content)}</div>
+                `;
+            }
+            
+            log.appendChild(message);
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function showProposal(proposal) {
+            const area = document.getElementById('proposalArea');
+            area.classList.remove('hidden');
+            
+            area.innerHTML = `
+                <div class="proposal-card" data-id="${proposal.id}">
+                    <div class="proposal-header">
+                        <span class="proposal-type">${proposal.type.replace('_', ' ')}</span>
+                        <span class="proposal-rationale">${proposal.rationale}</span>
+                    </div>
+                    <div class="proposal-tabs">
+                        ${proposal.previewTabs.map(tab => `
+                            <div class="preview-tab" data-tab-id="${tab.id}">
+                                <div class="tab-title">${tab.title}</div>
+                                <div class="tab-type">${tab.type}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="proposal-actions">
+                        <button class="proposal-approve" data-id="${proposal.id}">Approve</button>
+                        <button class="proposal-reject" data-id="${proposal.id}">Reject</button>
+                    </div>
+                </div>
+            `;
+            
+            // Add event listeners for approve/reject
+            area.querySelector('.proposal-approve').addEventListener('click', () => approveProposal(proposal.id));
+            area.querySelector('.proposal-reject').addEventListener('click', () => rejectProposal(proposal.id));
+            
+            // Add preview tabs to tabs area
+            proposal.previewTabs.forEach(tab => {
+                addPreviewTab(tab);
+            });
+        }
+        
+        function addPreviewTab(tab) {
+            const tabsArea = document.getElementById('tabsArea');
+            const tabEl = document.createElement('div');
+            tabEl.className = 'preview-tab-item';
+            tabEl.id = `tab-${tab.id}`;
+            tabEl.innerHTML = `
+                <div class="preview-tab-header">
+                    <span class="preview-tab-title">${tab.title}</span>
+                    <button class="preview-tab-close">×</button>
+                </div>
+                <div class="preview-tab-content">
+                    ${renderPreviewContent(tab)}
+                </div>
+            `;
+            
+            tabEl.querySelector('.preview-tab-close').addEventListener('click', () => {
+                tabEl.remove();
+            });
+            
+            tabsArea.appendChild(tabEl);
+        }
+        
+        function renderPreviewContent(tab) {
+            switch (tab.type) {
+                case 'graph_preview':
+                    return `<div class="graph-preview">
+                        <div class="preview-node">${tab.content.node?.name || 'New Node'}</div>
+                    </div>`;
+                case 'pivot_preview':
+                    return `<div class="pivot-preview">
+                        <div class="preview-pivot-name">${tab.content.pivot?.name || 'New Pivot'}</div>
+                        <div class="preview-pivot-status">Status: ${tab.content.pivot?.status || 'open'}</div>
+                    </div>`;
+                case 'concept_card_preview':
+                    return `<div class="concept-preview">
+                        <div class="preview-concept-name">${tab.content.concept?.name || 'Concept'}</div>
+                    </div>`;
+                case 'analysis_preview':
+                    return `<div class="analysis-preview">
+                        <p>${tab.content.analysis || ''}</p>
+                    </div>`;
+                default:
+                    return `<div class="generic-preview">
+                        <p>Preview content</p>
+                    </div>`;
+            }
+        }
+        
+        async function approveProposal(proposalId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/proposals/${proposalId}/approve`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    addMessage('jarvis', 'Proposal approved. Changes have been committed to your project.');
+                    document.getElementById('proposalArea').classList.add('hidden');
+                    
+                    // Remove preview tabs
+                    const proposal = state.proposals.find(p => p.id === proposalId);
+                    if (proposal) {
+                        proposal.previewTabs.forEach(tab => {
+                            const tabEl = document.getElementById(`tab-${tab.id}`);
+                            if (tabEl) tabEl.remove();
+                        });
+                    }
+                    
+                    // Refresh data and re-render
+                    await loadState();
+                    renderGraph();
+                }
+            } catch (error) {
+                console.error('Failed to approve proposal:', error);
+            }
+        }
+        
+        async function rejectProposal(proposalId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/proposals/${proposalId}/reject`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    addMessage('jarvis', 'Proposal rejected. No changes were made.');
+                    document.getElementById('proposalArea').classList.add('hidden');
+                    
+                    // Remove preview tabs
+                    const proposal = state.proposals.find(p => p.id === proposalId);
+                    if (proposal) {
+                        proposal.previewTabs.forEach(tab => {
+                            const tabEl = document.getElementById(`tab-${tab.id}`);
+                            if (tabEl) tabEl.remove();
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to reject proposal:', error);
+            }
+        }
+        
+        // ============================================
+        // GRAPH & NODE CARDS
+        // ============================================
+        
+        function renderWorkbench() {
+            loadProjectData();
+            renderGraph();
+            renderSourceTray();
+            renderPivotsList();
+            renderThoughtStates();
+        }
+        
+        function renderGraph() {
+            const canvas = document.getElementById('graphCanvas');
+            
+            if (state.nodes.length === 0) {
+                canvas.innerHTML = `
+                    <div class="empty-graph">
+                        <p>No nodes yet</p>
+                        <p class="hint">Use commands to add nodes to your research graph</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Simple circular layout for nodes
+            const centerX = canvas.offsetWidth / 2 || 400;
+            const centerY = canvas.offsetHeight / 2 || 300;
+            const radius = 150;
+            
+            canvas.innerHTML = state.nodes.map((node, index) => {
+                const angle = (2 * Math.PI * index) / state.nodes.length;
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                
+                return `
+                    <div class="graph-node" 
+                         data-id="${node.id}"
+                         style="left: ${x}px; top: ${y}px;"
+                         onclick="showNodeCard('${node.id}')">
+                        <span class="node-name">${node.name}</span>
+                        <span class="node-status ${node.status}">${node.status}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            // Render edges
+            renderEdges(canvas);
+        }
+        
+        function renderEdges(canvas) {
+            const edgesHtml = state.edges.map(edge => {
+                const fromNode = state.nodes.find(n => n.id === edge.from);
+                const toNode = state.nodes.find(n => n.id === edge.to);
+                
+                if (!fromNode || !toNode) return '';
+                
+                // Calculate positions (simplified)
+                return `<div class="graph-edge" data-from="${edge.from}" data-to="${edge.to}"></div>`;
+            }).join('');
+            
+            canvas.innerHTML += edgesHtml;
+        }
+        
+        async function showNodeCard(nodeId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/nodes/${nodeId}`);
+                const node = await response.json();
+                currentNodeCard = node;
+                
+                document.getElementById('nodeCardTitle').textContent = node.name;
+                document.getElementById('nodeStatus').textContent = node.status || 'concept';
+                document.getElementById('nodeDomain').textContent = node.domain || '—';
+                
+                // Render connected concepts
+                const connectedList = document.getElementById('connectedList');
+                if (node.connected && node.connected.length > 0) {
+                    connectedList.innerHTML = node.connected.map(c => `
+                        <div class="connected-item" onclick="showNodeCard('${c.node.id}')">
+                            <span class="connected-name">${c.node.name}</span>
+                            <span class="connected-type">${c.edgeType}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    connectedList.innerHTML = '<p class="empty-state">No connections</p>';
+                }
+                
+                // Render related pivots
+                const pivotsList = document.getElementById('relatedPivotsList');
+                if (node.pivots && node.pivots.length > 0) {
+                    pivotsList.innerHTML = node.pivots.map(p => `
+                        <div class="pivot-item" onclick="showPivotCard('${p.id}')">
+                            ${p.name}
+                        </div>
+                    `).join('');
+                } else {
+                    pivotsList.innerHTML = '<p class="empty-state">No related pivots</p>';
+                }
+                
+                document.getElementById('nodeCardOverlay').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Failed to load node:', error);
+            }
+        }
+        
+        function closeNodeCard() {
+            document.getElementById('nodeCardOverlay').classList.add('hidden');
+            currentNodeCard = null;
+        }
+        
+        async function handleNodeAction(action) {
+            if (!currentNodeCard) return;
+            
+            switch (action) {
+                case 'bridge':
+                    addMessage('jarvis', `Bridging concept: ${currentNodeCard.name}`);
+                    break;
+                case 'formalise':
+                    addMessage('jarvis', `Formalizing concept: ${currentNodeCard.name}`);
+                    break;
+                case 'compare':
+                    addMessage('jarvis', `Comparing concept: ${currentNodeCard.name}`);
+                    break;
+                case 'mark':
+                    const status = prompt('Enter new status:', currentNodeCard.status || 'concept');
+                    if (status) {
+                        await fetch(`${API_BASE}/api/nodes/${currentNodeCard.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status })
+                        });
+                        await loadProjectData();
+                        renderGraph();
+                    }
+                    break;
+                case 'history':
+                    addMessage('jarvis', `Showing history for: ${currentNodeCard.name}`);
+                    break;
+            }
+        }
+        
+        function showAddNodeDialog() {
+            const nodeName = prompt('Enter node name:', 'New Concept');
+            if (!nodeName) return;
+            
+            // Use command interface to add node
+            document.getElementById('commandInput').value = `add node ${nodeName}`;
+            sendCommand();
+        }
+        
+        // ============================================
+        // SOURCE TRAY
+        // ============================================
+        
+        function renderSourceTray() {
+            const tray = document.getElementById('sourceTray');
+            const sources = state.projectSources.filter(s => s.projectId === state.activeProjectId);
+            
+            if (sources.length === 0) {
+                tray.innerHTML = '<p class="empty-state">No sources</p>';
+                return;
+            }
+            
+            tray.innerHTML = sources.map(source => `
+                <div class="source-tray-item" data-id="${source.id}">
+                    <span class="source-icon">📄</span>
+                    <span class="source-name">${source.name}</span>
+                    <button class="source-link-btn" data-id="${source.id}" title="Link to library">
+                        ⛓
+                    </button>
+                </div>
+            `).join('');
+            
+            tray.querySelectorAll('.source-tray-item').forEach(item => {
+                item.addEventListener('click', () => showFragmentWindow(item.dataset.id));
+            });
+            
+            tray.querySelectorAll('.source-link-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    await requestSourceLinkApproval(btn.dataset.id);
+                });
+            });
+        }
+        
+        async function requestSourceLinkApproval(sourceId) {
+            try {
+                await fetch(`${API_BASE}/api/approvals`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'source_link',
+                        context: 'sourceTray',
+                        data: { sourceId }
+                    })
+                });
+                addMessage('jarvis', 'Source link approval requested. You can approve it in the approval panel.');
+            } catch (error) {
+                console.error('Failed to request approval:', error);
+            }
+        }
+        
+        // ============================================
+        // FRAGMENT WINDOW
+        // ============================================
+        
+        async function showFragmentWindow(sourceId) {
+            const source = state.projectSources.find(s => s.id === sourceId);
+            if (!source) return;
+            
+            currentFragment = source;
+            
+            document.getElementById('fragmentTitle').textContent = source.name;
+            document.getElementById('fragmentSource').textContent = source.path || '';
+            
+            // If it's a PDF, show PDF viewer
+            if (source.path && source.path.endsWith('.pdf')) {
+                const pdfUrl = `${API_BASE}/api/files/${source.path}`;
+                document.getElementById('pdfFrame').src = pdfUrl;
+                document.getElementById('pdfViewer').classList.remove('hidden');
+            } else {
+                document.getElementById('pdfViewer').classList.add('hidden');
+            }
+            
+            // Show fragments for this source
+            const fragments = state.fragments.filter(f => f.sourceId === sourceId);
+            const fragmentText = document.getElementById('fragmentText');
+            
+            if (fragments.length > 0) {
+                fragmentText.innerHTML = fragments.map(f => `
+                    <div class="fragment-passage">
+                        <p>${f.text || 'No text available'}</p>
+                        ${f.pageStart ? `<span class="page-ref">Pages ${f.pageStart}-${f.pageEnd || f.pageStart}</span>` : ''}
+                    </div>
+                `).join('');
+            } else {
+                fragmentText.innerHTML = '<p class="empty-state">No fragments yet</p>';
+            }
+            
+            document.getElementById('fragmentOverlay').classList.remove('hidden');
+        }
+        
+        function closeFragment() {
+            document.getElementById('fragmentOverlay').classList.add('hidden');
+            document.getElementById('pdfFrame').src = '';
+            currentFragment = null;
+        }
+        
+        function navigatePage(direction) {
+            // Implement page navigation
+            addMessage('jarvis', `Navigating to ${direction > 0 ? 'next' : 'previous'} page`);
+        }
+        
+        async function handleFragmentAction(action) {
+            if (!currentFragment) return;
+            
+            switch (action) {
+                case 'quote':
+                    addMessage('jarvis', 'Quote added to workspace');
+                    break;
+                case 'open-source':
+                    showFragmentWindow(currentFragment.id);
+                    break;
+                case 'ask-jarvis':
+                    const question = prompt('Ask Jarvis about this fragment:');
+                    if (question) {
+                        document.getElementById('commandInput').value = question;
+                        sendCommand();
+                    }
+                    break;
+                case 'save-thought':
+                    const title = prompt('Enter thought state title:');
+                    if (title) {
+                        await fetch(`${API_BASE}/api/thought-states`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                title,
+                                type: 'fragment',
+                                content: { sourceId: currentFragment.id }
+                            })
+                        });
+                        await loadProjectData();
+                        renderThoughtStates();
+                        addMessage('jarvis', `Thought state "${title}" saved`);
+                    }
+                    break;
+            }
+        }
+        
+        // ============================================
+        // PIVOTS
+        // ============================================
+        
+        function renderPivotsList() {
+            const list = document.getElementById('pivotsList');
+            
+            if (state.pivots.length === 0) {
+                list.innerHTML = '<p class="empty-state">No pivots</p>';
+                return;
+            }
+            
+            list.innerHTML = state.pivots.map(pivot => `
+                <div class="pivot-item" data-id="${pivot.id}">
+                    <div class="pivot-info">
+                        <span class="pivot-name">${pivot.name}</span>
+                        <span class="pivot-status ${pivot.status}">${pivot.status}</span>
+                    </div>
+                    <div class="pivot-actions">
+                        <button class="pivot-archive" data-id="${pivot.id}">Archive</button>
+                        <button class="pivot-promote" data-id="${pivot.id}">Promote</button>
+                    </div>
+                </div>
+            `).join('');
+            
+            list.querySelectorAll('.pivot-archive').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    await archivePivot(btn.dataset.id);
+                });
+            });
+            
+            list.querySelectorAll('.pivot-promote').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    await promotePivot(btn.dataset.id);
+                });
+            });
+        }
+        
+        async function createPivot() {
+            const name = prompt('Enter pivot name:', 'New Research Question');
+            if (!name) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/pivots`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                const pivot = await response.json();
+                state.pivots.push(pivot);
+                renderPivotsList();
+                addMessage('jarvis', `Created new pivot: ${name}`);
+            } catch (error) {
+                console.error('Failed to create pivot:', error);
+            }
+        }
+        
+        async function archivePivot(pivotId) {
+            try {
+                await fetch(`${API_BASE}/api/pivots/${pivotId}/archive`, { method: 'POST' });
+                const pivot = state.pivots.find(p => p.id === pivotId);
+                if (pivot) pivot.status = 'archived';
+                renderPivotsList();
+                addMessage('jarvis', 'Pivot archived');
+            } catch (error) {
+                console.error('Failed to archive pivot:', error);
+            }
+        }
+        
+        async function promotePivot(pivotId) {
+            try {
+                await fetch(`${API_BASE}/api/pivots/${pivotId}/promote`, { method: 'POST' });
+                const pivot = state.pivots.find(p => p.id === pivotId);
+                if (pivot) pivot.status = 'promoted';
+                renderPivotsList();
+                addMessage('jarvis', 'Pivot promoted to main research thread');
+            } catch (error) {
+                console.error('Failed to promote pivot:', error);
+            }
+        }
+        
+        function showPivotCard(pivotId) {
+            const pivot = state.pivots.find(p => p.id === pivotId);
+            if (pivot) {
+                addMessage('jarvis', `Pivot: ${pivot.name} (${pivot.status})`);
+            }
+        }
+        
+        // ============================================
+        // THOUGHT STATES
+        // ============================================
+        
+        function renderThoughtStates() {
+            const list = document.getElementById('thoughtStatesList');
+            
+            if (state.thoughtStates.length === 0) {
+                list.innerHTML = '<p class="empty-state">No thought states</p>';
+                return;
+            }
+            
+            list.innerHTML = state.thoughtStates.map(thought => `
+                <div class="thought-state-item" data-id="${thought.id}">
+                    <span class="thought-title">${thought.title}</span>
+                    <span class="thought-type">${thought.type}</span>
+                </div>
+            `).join('');
+            
+            list.querySelectorAll('.thought-state-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    addMessage('jarvis', `Viewing thought state: ${item.querySelector('.thought-title').textContent}`);
+                });
+            });
+        }
+        
+        // ============================================
+        // UTILITIES
+        // ============================================
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString();
+        }
+        
+        function render() {
+            // Initial render - always show project launcher first
+            showScreen('projectLauncher');
+        }
+    </script>
+</body>
+</html>
