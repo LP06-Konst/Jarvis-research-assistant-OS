@@ -16,7 +16,22 @@ jobs:
 
       - name: Trigger Render Deploy
         run: |
-          curl -s -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
+          # Get service ID if not set
+          SERVICE_ID="${{ secrets.RENDER_SERVICE_ID }}"
+          if [ -z "$SERVICE_ID" ]; then
+            echo "RENDER_SERVICE_ID not set, checking for existing services..."
+            # Try to find the service from Render API
+            SERVICES=$(curl -s "https://api.render.com/v1/services" -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}")
+            echo "Services: $SERVICES"
+            SERVICE_ID=$(echo "$SERVICES" | python3 -c "import sys,json; d=json.load(sys.stdin); print(next((s['id'] for s in d if 'jarvis' in s.get('name','').lower()), ''))" 2>/dev/null)
+            if [ -z "$SERVICE_ID" ]; then
+              echo "Could not find Jarvis service. Skipping deploy."
+              exit 0
+            fi
+          fi
+          
+          echo "Triggering deploy for service: $SERVICE_ID"
+          curl -s -X POST "https://api.render.com/v1/services/$SERVICE_ID/deploys" \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json" \
-            -d '{"clearCache": "automatic"}' | jq .
+            -d '{"clearCache": "do_not_clear"}' | jq .
