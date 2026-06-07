@@ -18,13 +18,8 @@ jobs:
         run: |
           SERVICE_ID="${{ secrets.RENDER_SERVICE_ID }}"
           if [ -z "$SERVICE_ID" ]; then
-            echo "RENDER_SERVICE_ID not set, looking for service..."
-            SERVICES=$(curl -s "https://api.render.com/v1/services" -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}")
-            SERVICE_ID=$(echo "$SERVICES" | python3 -c "import sys,json; d=json.load(sys.stdin); print(next((s['service']['id'] for s in d if 'jarvis' in s['service']['name'].lower()), ''))")
-            if [ -z "$SERVICE_ID" ]; then
-              echo "Could not find Jarvis service"
-              exit 1
-            fi
+            echo "RENDER_SERVICE_ID not set, using default..."
+            SERVICE_ID="srv-d8ipg8eq1p3s73f0e920"
           fi
           echo "Deploying service: $SERVICE_ID"
           curl -s -X POST "https://api.render.com/v1/services/$SERVICE_ID/deploys" \
