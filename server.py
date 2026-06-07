@@ -1082,6 +1082,11 @@ def add_to_library():
 # SEMANTIC SEARCH (RAG)
 # ============================================
 
+@app.route('/api/ping', methods=['GET', 'POST'])
+def ping():
+    """Test endpoint for route verification"""
+    return jsonify({"status": "ok", "method": request.method})
+
 @app.route('/api/search', methods=['POST'])
 def semantic_search_endpoint():
     """Perform semantic search across project sources using RAG"""
