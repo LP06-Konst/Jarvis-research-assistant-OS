@@ -9,15 +9,14 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Trigger Render Deploy
         run: |
-          echo "Pushing to GitHub triggers Render auto-deploy"
-          echo "If Render isn't auto-deploying, check:"
-          echo "1. Render dashboard -> Service -> Settings -> Git"
-          echo "2. Ensure 'Auto-deploy from GitHub' is enabled"
-          echo "3. Check the branch matches (main)"
+          curl -s -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"clearCache": "automatic"}' | jq .
