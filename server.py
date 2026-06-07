@@ -270,7 +270,7 @@ def delete_source(source_id):
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
-    """Upload a file to a project"""
+    """Upload a file to a project and process through RAG pipeline"""
     if 'file' not in request.files:
         return jsonify({"error": "No file provided"}), 400
     
@@ -292,6 +292,41 @@ def upload_file():
         
         # Add as source
         source_id = generate_id()
+        
+        # Process file through RAG pipeline
+        processing_result = {
+            "chunks_processed": 0,
+            "analysis": None,
+            "error": None
+        }
+        
+        try:
+            # Import and run RAG pipeline
+            from rag import extract_text_from_pdf, chunk_text, store_chunks, analyze_document_structure
+            
+            if filename.lower().endswith('.pdf'):
+                # Extract and chunk PDF
+                raw_chunks = extract_text_from_pdf(filepath)
+                chunks = chunk_text("\n\n".join([c['text'] for c in raw_chunks]))
+                
+                if chunks:
+                    # Store in vector database
+                    metadata = {"filename": filename}
+                    chunk_ids = store_chunks(source_id, project_id, chunks, metadata)
+                    processing_result["chunks_processed"] = len(chunk_ids)
+                    
+                    # Analyze document structure
+                    doc_analysis = analyze_document_structure(chunks)
+                    processing_result["analysis"] = doc_analysis
+                else:
+                    processing_result["error"] = "No text extracted from PDF"
+            else:
+                processing_result["error"] = "Non-PDF files stored but not indexed"
+                
+        except Exception as e:
+            processing_result["error"] = str(e)
+            print(f"RAG processing error: {e}")
+        
         source = {
             "id": source_id,
             "projectId": project_id,
@@ -299,6 +334,8 @@ def upload_file():
             "type": "file",
             "path": f"{project_id}/{filename}",
             "addedAt": datetime.now().isoformat(),
+            "chunks": processing_result["chunks_processed"],
+            "analysis": processing_result["analysis"],
             "fragments": []
         }
         
@@ -306,10 +343,13 @@ def upload_file():
         
         project = next((p for p in state["projects"] if p["id"] == project_id), None)
         if project:
-            project.setdefault("sources", []).append(source)
+            project.setdefault("sources", []).append(source_id)
         
         save_state()
-        return jsonify(source)
+        return jsonify({
+            "source": source,
+            "processing": processing_result
+        })
     
     return jsonify({"error": "File type not allowed"}), 400
 
@@ -331,9 +371,10 @@ def process_command():
     data = request.json
     command = data.get("command", "")
     context = data.get("context", {})
+    project_id = data.get("projectId") or state.get("activeProjectId")
     
-    # Generate proposal based on command
-    proposal = generate_proposal(command, context)
+    # Generate proposal based on command with AI analysis
+    proposal = generate_proposal(command, context, project_id)
     
     # Add to proposals
     state["proposals"].append(proposal)
@@ -341,7 +382,7 @@ def process_command():
     
     return jsonify(proposal)
 
-def generate_proposal(command, context):
+def generate_proposal(command, context, project_id=None):
     """
     Parse command into structured proposal.
     This is the core AI parsing logic.
@@ -478,8 +519,8 @@ def generate_proposal(command, context):
         }]
         rationale = "Analyzing your command to provide research insights."
     
-    # Generate dialectical response (Jarvis reflection)
-    dialectical_response = generate_dialectical_response(full_command, proposal_type)
+    # Generate dialectical response (Jarvis reflection) with real AI analysis
+    dialectical_response = generate_dialectical_response(full_command, proposal_type, project_id)
     
     return {
         "id": proposal_id,
@@ -493,38 +534,59 @@ def generate_proposal(command, context):
         "createdAt": datetime.now().isoformat()
     }
 
-def generate_dialectical_response(command, proposal_type):
+def generate_dialectical_response(command, proposal_type, project_id=None):
     """
     Jarvis acts as a reflective dialectical participant.
-    Provides analysis alongside proposals.
+    Uses real AI analysis from the analysis module.
     """
-    responses = {
-        "add_node": "Adding nodes expands your conceptual landscape. Consider how this concept relates to existing nodes — does it bridge domains or extend current thinking?",
-        "add_edge": "Connections shape the argumentative structure. What type of relationship are you establishing? (causal, comparative, hierarchical)",
-        "create_pivot": "New pivots open research directions. What pressure point does this address? How does it interact with existing pivots?",
-        "archive_pivot": "Archiving frees cognitive space. Ensure this pivot has yielded its insights or that its closure is deliberate.",
-        "promote_pivot": "Promoting elevates a research thread. This signals increased confidence in this direction.",
-        "link_source": "Linking to library makes sources reusable across projects. Consider cross-project implications.",
-        "search": "Search reveals patterns. Note unexpected findings — they often indicate blind spots or new directions.",
-        "define_concept": "Definitions shape discourse. Be precise: what distinguishes this concept from similar ones?",
-        "analysis": "Analysis deepens understanding. Consider counter-arguments and alternative framings."
-    }
-    
-    base_response = responses.get(proposal_type, "I'm processing your command. Consider the implications of this action within your broader research context.")
-    
-    return {
-        "analysis": base_response,
-        "suggestions": [
-            "Consider how this relates to your current pivots",
-            "Check for existing concepts that might connect",
-            "Think about the theoretical implications"
-        ],
-        "pressure_points": [
-            "What assumption does this embed?",
-            "What would be the counter-argument?",
-            "How does this fit the overall research arc?"
-        ]
-    }
+    try:
+        from analysis import get_analyzer
+        analyzer = get_analyzer()
+        
+        # Perform real analysis on the command
+        analysis_result = analyzer.analyze_content(command, project_id=project_id, depth="critical")
+        
+        return analysis_result.get("dialectical_response", {
+            "analysis": analysis_result.get("analysis", ""),
+            "pressure_points": [
+                "What assumption does this embed?",
+                "What would be the counter-argument?",
+                "How does this fit the overall research arc?"
+            ],
+            "suggestions": [
+                "Consider how this relates to your current pivots",
+                "Check for existing concepts that might connect",
+                "Think about the theoretical implications"
+            ]
+        })
+    except Exception as e:
+        print(f"Analysis error: {e}")
+        # Fallback to static responses
+        responses = {
+            "add_node": "Adding nodes expands your conceptual landscape. Consider how this concept relates to existing nodes — does it bridge domains or extend current thinking?",
+            "add_edge": "Connections shape the argumentative structure. What type of relationship are you establishing? (causal, comparative, hierarchical)",
+            "create_pivot": "New pivots open research directions. What pressure point does this address? How does it interact with existing pivots?",
+            "archive_pivot": "Archiving frees cognitive space. Ensure this pivot has yielded its insights or that its closure is deliberate.",
+            "promote_pivot": "Promoting elevates a research thread. This signals increased confidence in this direction.",
+            "link_source": "Linking to library makes sources reusable across projects. Consider cross-project implications.",
+            "search": "Search reveals patterns. Note unexpected findings — they often indicate blind spots or new directions.",
+            "define_concept": "Definitions shape discourse. Be precise: what distinguishes this concept from similar ones?",
+            "analysis": "Analysis deepens understanding. Consider counter-arguments and alternative framings."
+        }
+        
+        return {
+            "analysis": responses.get(proposal_type, responses["analysis"]),
+            "pressure_points": [
+                "What assumption does this embed?",
+                "What would be the counter-argument?",
+                "How does this fit the overall research arc?"
+            ],
+            "suggestions": [
+                "Consider how this relates to your current pivots",
+                "Check for existing concepts that might connect",
+                "Think about the theoretical implications"
+            ]
+        }
 
 @app.route('/api/proposals', methods=['GET'])
 def list_proposals():
@@ -937,6 +999,57 @@ def add_to_library():
         return jsonify({"success": True})
     
     return jsonify({"error": "Source already in library or not found"}), 400
+
+# ============================================
+# SEMANTIC SEARCH (RAG)
+# ============================================
+
+@app.route('/api/search', methods=['POST'])
+def semantic_search_endpoint():
+    """Perform semantic search across project sources using RAG"""
+    data = request.json
+    query = data.get("query", "")
+    project_id = data.get("projectId") or state.get("activeProjectId")
+    top_k = data.get("topK", 5)
+    
+    if not query:
+        return jsonify({"error": "No query provided"}), 400
+    
+    try:
+        from rag import semantic_search
+        
+        # Perform the search
+        results = semantic_search(query, project_id=project_id, top_k=top_k)
+        
+        return jsonify({
+            "query": query,
+            "results": results,
+            "count": len(results)
+        })
+    except Exception as e:
+        return jsonify({"error": str(e), "results": []}), 500
+
+
+@app.route('/api/analyze', methods=['POST'])
+def analyze_content_endpoint():
+    """Analyze content using AI with RAG context"""
+    data = request.json
+    query = data.get("query", "")
+    project_id = data.get("projectId") or state.get("activeProjectId")
+    
+    if not query:
+        return jsonify({"error": "No query provided"}), 400
+    
+    try:
+        from analysis import get_analyzer
+        analyzer = get_analyzer()
+        
+        result = analyzer.analyze_content(query, project_id=project_id, depth="critical")
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 # ============================================
 # HEALTH CHECK
