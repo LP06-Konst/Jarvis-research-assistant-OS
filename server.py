@@ -5,6 +5,7 @@ A project-first research environment with AI chat command interface.
 
 from flask import Flask, request, jsonify, send_from_directory, send_file, g
 from flask_cors import CORS
+from typing import Dict, List
 import json
 import os
 import re
@@ -160,8 +161,10 @@ def reset_to_initial():
     save_state()
     return {"message": "State reset with sample data", "nodes": len(state["nodes"]), "edges": len(state["edges"])}
 
-init_db()
-load_state()
+# Initialize database and load state within app context
+with app.app_context():
+    init_db()
+    load_state()
 
 # ============================================
 # HELPER FUNCTIONS
