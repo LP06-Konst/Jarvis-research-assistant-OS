@@ -200,12 +200,21 @@
                     <div class="node-info">
                         <div class="info-row">
                             <span class="info-label">Status:</span>
-                            <span id="nodeStatus" class="info-value">concept</span>
+                            <span id="nodeStatus" class="info-value status-badge">concept</span>
                         </div>
                         <div class="info-row">
                             <span class="info-label">Domain:</span>
-                            <span id="nodeDomain" class="info-value">—</span>
+                            <span id="nodeDomain" class="info-value editable-field">—</span>
                         </div>
+                        <div class="info-row">
+                            <span class="info-label">Created:</span>
+                            <span id="nodeCreatedAt" class="info-value">—</span>
+                        </div>
+                    </div>
+                    
+                    <div class="node-description">
+                        <h4>Description</h4>
+                        <p id="nodeDescription" class="description-text">No description yet. Click to add...</p>
                     </div>
                     
                     <div class="connected-concepts">
@@ -1104,6 +1113,8 @@
                 document.getElementById('nodeCardTitle').textContent = node.name;
                 document.getElementById('nodeStatus').textContent = node.status || 'concept';
                 document.getElementById('nodeDomain').textContent = node.domain || '—';
+                document.getElementById('nodeCreatedAt').textContent = formatDate(node.createdAt);
+                document.getElementById('nodeDescription').textContent = node.description || 'No description yet. Click to add...';
                 
                 // Render connected concepts
                 const connectedList = document.getElementById('connectedList');
@@ -1130,11 +1141,30 @@
                     pivotsList.innerHTML = '<p class="empty-state">No related pivots</p>';
                 }
                 
+                // Render source references
+                const sourceRefsList = document.getElementById('sourceRefsList');
+                if (node.fragments && node.fragments.length > 0) {
+                    sourceRefsList.innerHTML = node.fragments.map(f => `
+                        <div class="source-ref-item" onclick="openFragment('${f.id}')">
+                            <span class="source-ref-name">${f.name}</span>
+                            <span class="source-ref-preview">${f.preview || '...'}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    sourceRefsList.innerHTML = '<p class="empty-state">No source references</p>';
+                }
+                
                 document.getElementById('nodeCardOverlay').classList.remove('hidden');
                 
             } catch (error) {
                 console.error('Failed to load node:', error);
             }
+        }
+        
+        function formatDate(isoString) {
+            if (!isoString) return '—';
+            const date = new Date(isoString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }
         
         function closeNodeCard() {
