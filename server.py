@@ -114,6 +114,7 @@ def get_initial_state():
         "nodes": sample_nodes,
         "edges": sample_edges,
         "fragments": [],
+        "commandHistory": [],
         "windows": {
             "focused": None,
             "minimized": []
@@ -501,6 +502,21 @@ def process_command():
     
     # Add to proposals
     state["proposals"].append(proposal)
+    
+    # Track command in history
+    history_entry = {
+        "id": generate_id(),
+        "text": command,
+        "intent": proposal["type"],
+        "resultId": proposal["id"],
+        "createdAt": datetime.now().isoformat()
+    }
+    state["commandHistory"].append(history_entry)
+    
+    # Keep only last 50 commands in history
+    if len(state["commandHistory"]) > 50:
+        state["commandHistory"] = state["commandHistory"][-50:]
+    
     save_state()
     
     return jsonify(proposal)
@@ -742,6 +758,37 @@ def list_proposals():
     """List all pending proposals"""
     pending = [p for p in state["proposals"] if p["status"] == "pending"]
     return jsonify(pending)
+
+@app.route('/api/command-history', methods=['GET'])
+def get_command_history():
+    """Get command history"""
+    limit = request.args.get('limit', 20, type=int)
+    history = state.get("commandHistory", [])[-limit:]
+    return jsonify(history)
+
+@app.route('/api/command-history/<history_id>/rerun', methods=['POST'])
+def rerun_command(history_id):
+    """Rerun a command from history"""
+    history_entry = next((h for h in state["commandHistory"] if h["id"] == history_id), None)
+    if not history_entry:
+        return jsonify({"error": "Command not found in history"}), 404
+    
+    # Re-process the command
+    proposal = generate_proposal(history_entry["text"], {}, None)
+    state["proposals"].append(proposal)
+    
+    # Add to history again
+    history_entry = {
+        "id": generate_id(),
+        "text": history_entry["text"],
+        "intent": proposal["type"],
+        "resultId": proposal["id"],
+        "createdAt": datetime.now().isoformat()
+    }
+    state["commandHistory"].append(history_entry)
+    save_state()
+    
+    return jsonify(proposal)
 
 @app.route('/api/proposals/<proposal_id>/approve', methods=['POST'])
 def approve_proposal(proposal_id):
