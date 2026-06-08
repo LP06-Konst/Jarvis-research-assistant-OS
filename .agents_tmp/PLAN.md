@@ -1,220 +1,70 @@
-# Jarvis Research OS — Implementation Plan
-## Based on Official Documentation
+# Jarvis Research OS — Implementation Plan (Slice by Slice)
 
 ---
 
-# 1. OBJECTIVE
+# SLICE 1: Quick Wins (Already Working Locally ✅)
 
-Redesign Jarvis from a fixed dashboard into a **project-first research environment** with:
+**Status:** Local hosting works ✓
 
-**CORE: AI Chat Command Interface**
-- Chat command interface creates generated tabs (thought states)
-- Hybrid codegen + composable tab intuition
-- Command → AI creates PROPOSAL → Generated Preview Tabs → User Approves/Rejects → Commit/Discard
-
-**Additional Features:**
-- Project launcher as first screen
-- Dockable windows (not fixed layout)
-- Interactive expandable graph nodes with node cards
-- Fragment windows with PDF viewer
-- Contextual inline approvals (not global inbox)
-- Warm "Claude-like" aesthetic
+| Task | Status | Files |
+|------|--------|-------|
+| Flask g-context fix | ✅ Done locally | server.py |
+| Project launcher | ✅ Working | index.html |
+| Basic command interface | ✅ Working | index.html, server.py |
 
 ---
 
-# 2. CONTEXT SUMMARY
+# SLICE 2: Next Priority — Clean Up & Push to GitHub
 
-## Current Implementation (What Exists)
-| Function | Purpose |
-|----------|---------|
-| `renderHome()` | basic home screen |
-| `renderWorkbench()` | fixed left/center/right layout |
-| `renderWindowManager()` | window management |
-| `renderGraphWindow()` | static graph display |
-| `renderNodeCard()` | node cards (likely static) |
-| `renderTabs()` | tab rendering |
-| `renderWorkspace()` | workspace view |
-| `renderSourceOnboarding()` | source upload flow |
-| `renderFragmentWindow()` | **MISSING** — needs to be added |
-| `renderGraph()` | graph rendering |
-
-## State Structure (Current)
-```json
-{
-  "projects": [...],
-  "activeProjectId": null,
-  "projectSources": [...],
-  "localLibrarySources": [],
-  "sourceLinkApprovals": []
-}
-```
-
-## Files to Modify
-| File | Changes |
-|------|---------|
-| `server.py` | Add chat API endpoint, wire Gemini to windows |
-| `app.js` | Update for production, chat UI |
-| `styles.css` | No changes |
-| `requirements.txt` | Add `google-generativeai` |
-| `render.yaml` | Deploy config (already exists) |
-| `.github/workflows/deploy.yml` | Auto-deploy on push |
-| `llm.py` | **NEW** — Google AI Studio / Gemini integration |
-| `.env.example` | `GOOGLE_API_KEY` template |
-
-## External Services
-| Service | Details |
-|---------|---------|
-| **LLM Provider** | Google AI Studio (Gemini) |
-| **API Key** | Configured via `GOOGLE_API_KEY` env var |
-| **GitHub Repo** | `github.com/LP06-Konst/Jarvis-research-assistant-OS` |
-| **Deploy Target** | Render |
+| Task | Description | Files |
+|------|-------------|-------|
+| 2.1 | Apply Flask g-context fix | server.py |
+| 2.2 | Create branch `fix-flask-g-context-error` | git |
+| 2.3 | Push to GitHub | git |
+| 2.4 | Create Pull Request | GitHub |
 
 ---
 
-# 3. APPROACH OVERVIEW
+# SLICE 3: AI Chat Command Enhancement
 
-**Phase 1:** Project Launcher & Home Flow
-**Phase 2:** AI Chat Command Interface (CORE) ← PRIORITY
-**Phase 3:** Dockable Window System
-**Phase 4:** Interactive Node Cards
-**Phase 5:** PDF Viewer & Fragment Windows
-**Phase 6:** Contextual Inline Approvals
-**Phase 7:** Aesthetic Redesign
-
-**Core Loop (Command → Proposal → Generated Tabs → Approval):**
-```
-User Command → AI parses → Creates PROPOSAL → Generated Preview Tabs (Thought States)
-     ↓
-User Approves/Rejects
-     ↓
-Commit to project state OR Discard generated tabs
-```
+| Task | Description | Files |
+|------|-------------|-------|
+| 3.1 | Improve command parser | server.py |
+| 3.2 | Add proposal preview tabs | index.html |
+| 3.3 | Add dialectical responses | llm.py |
+| 3.4 | Command history tracking | server.py, index.html |
 
 ---
 
-# 4. IMPLEMENTATION STEPS
+# SLICE 4: UI Polish
 
-## PHASE 1: Project Launcher & Home Flow
-
-### Step 1.1: Replace renderHome() with Project Launcher
-- **Goal:** First screen shows project launcher, not workbench
-- **Method:**
-  - Replace `renderHome()` 
-  - Show: Start research project, Open recent projects, Inspect local library status
-  - Project flow: Name project → Upload/select sources → Enter dockable workbench
-- **Files:** `app.js`, `styles.css`
-- **Test:** Opening app shows project launcher
-
-### Step 1.2: Extend State Schema
-- **Goal:** Add project/source state fields
-- **Method:**
-  - Add `projects[]`, `activeProjectId`
-  - Add `localLibrarySources[]` for approved links
-  - Add `projectSources[]` scoped per project
-  - Add `sourceLinkApprovals[]` for pending approvals
-- **Files:** `server.py`
-
-### Step 1.3: Enhance renderSourceOnboarding()
-- **Goal:** Upload/select sources before workbench
-- **Method:**
-  - Keep `renderSourceOnboarding()` with enhancements
-  - Sources remain project-scoped first
-  - Show project source set before entering workbench
-- **Files:** `app.js`, `server.py`
-- **Test:** Creating project opens source onboarding
+| Task | Description | Files |
+|------|-------------|-------|
+| 4.1 | Interactive node cards | index.html, styles.css |
+| 4.2 | Dockable windows | index.html, styles.css |
+| 4.3 | Fragment/PDF viewer | index.html, server.py |
+| 4.4 | Approval flow UI | index.html |
 
 ---
 
-## PHASE 2: AI Chat Command Interface (CORE)
+# SLICE 5: Deploy to Render
 
-### Step 2.1: Command Console Window
-- **Goal:** Central chat interface for commands
-- **Method:**
-  - Keep command window but enhance with chat UI
-  - Text input for natural language commands
-  - Display conversation with Jarvis (messages list)
-  - Show generated tabs/proposals inline
-  - Typing indicator while Jarvis processes
-- **Files:** `app.js`, `styles.css`
-- **Test:** Can type command and see Jarvis response
+| Task | Description | Files |
+|------|-------------|-------|
+| 5.1 | Verify render.yaml | render.yaml |
+| 5.2 | Verify GitHub Actions | .github/workflows/deploy.yml |
+| 5.3 | Connect to Render | User action |
+| 5.4 | Test cloud deployment | - |
 
-### Step 2.2: Google AI Studio API Setup
-- **Goal:** Integrate Gemini for Jarvis responses
-- **Method:**
-  - Get API key from Google AI Studio (aistudio.google.com)
-  - Install `google-generativeai` package
-  - Create `llm.py` module for Gemini integration
-  - Configure model: `gemini-1.5-flash` (fast) or `gemini-1.5-pro` (best reasoning)
-  - Store API key in environment variable `GOOGLE_API_KEY`
-- **Files:** `llm.py`, `requirements.txt`, `.env.example`
-- **Test:** Can call Gemini and get response
+---
 
-### Step 2.3: Command Parser (Intent Detection)
-- **Goal:** Parse user command into structured intent
-- **Method:**
-  - Pattern matching for command types:
-    - `"add concept [name]"` → CREATE_CONCEPT
-    - `"link [source] to library"` → APPROVE_LIBRARY_LINK
-    - `"show me [concept]"` → EXPAND_NODE
-    - `"create pivot [question]"` → CREATE_PIVOT
-    - `"what about [topic]"` → REFLECTION
-  - Extract entities: concept names, source names, pivot questions
-  - Handle natural language variations
-  - **Use Gemini** to parse ambiguous commands
-- **Files:** `server.py` (new `command_parser.py`), `llm.py`
-- **Test:** "add a concept called Topology" → {intent: CREATE_CONCEPT, name: "Topology"}
+## CURRENT WORKING STATUS:
+- ✅ Local hosting works
+- ⏳ GitHub repo not updated with fixes yet
+- 📋 Phase plan loaded and ready
 
-### Step 2.4: Proposal Generator (with Gemini)
-- **Goal:** Create PROPOSAL from parsed intent using Gemini
-- **Method:**
-  - Generate PROPOSAL object with:
-    - `id`: unique proposal ID
-    - `intent`: command type
-    - `changes`: what WILL change if approved
-      - For CREATE_CONCEPT: {concept: {id, label, domain, status}}
-      - For CREATE_PIVOT: {pivot: {id, label, description}}
-      - For APPROVE_LINK: {source: sourceId}
-    - `generatedTabs`: preview UI components
-    - `rationale`: why this change makes sense (generated by Gemini)
-    - `status`: "pending" | "approved" | "rejected"
-    - `createdAt`: timestamp
-  - **Gemini generates** the rationale and preview data
-  - Store proposal in project state
-- **Files:** `server.py`, `llm.py`
-- **Test:** Command creates proposal with status "pending"
-
-### Step 2.5: Generated Tabs (Thought States as Preview)
-- **Goal:** Visual preview of proposed changes
-- **Method:**
-  - Generate preview components for each change type:
-    - **Concept Preview Tab**: shows new concept card with all fields
-    - **Pivot Preview Tab**: shows new pivot with connected concepts
-    - **Graph Preview Tab**: shows how graph will look with new node/edge
-    - **Library Preview Tab**: shows source highlighted in library
-  - **Gemini** helps generate appropriate preview content
-  - Tabs are disposable (not committed until approved)
-  - Each tab has "Approve" and "Reject" buttons
-  - Multiple tabs can be generated from one command
-- **Files:** `server.py`, `app.js`, `llm.py`
-- **Test:** Proposal shows 1-3 preview tabs
-
-### Step 2.6: Proposal Approval Flow
-- **Goal:** User approves/rejects generated changes
-- **Method:**
-  - Display generated tabs with "Approve" / "Reject" buttons
-  - **Approve** → apply changes to project state:
-    - CREATE_CONCEPT → add to `project.concepts[]`
-    - CREATE_PIVOT → add to `project.pivots[]`
-    - APPROVE_LINK → move source to `localLibrarySources[]`
-    - Update `edges[]`, `trajectories[]` as needed
-    - proposal.status = "approved"
-  - **Reject** → discard:
-    - Remove generated tabs
-    - No changes to project state
-    - proposal.status = "rejected"
-  - Each approval is contextual (not global inbox)
-- **Files:** `server.py`, `app.js`
-- **Test:** Approve → concept appears in graph; Reject → nothing changes
+## NEXT ACTION:
+Click **Build** to switch to Code Agent → apply Flask fix → push to GitHub → create PR
 
 ### Step 2.7: Graph/Pivot/Library Mutations via Commands
 - **Goal:** Commands modify all project state
