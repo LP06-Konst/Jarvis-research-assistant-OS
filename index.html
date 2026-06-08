@@ -147,6 +147,11 @@
                             <div class="command-input-area">
                                 <input type="text" id="commandInput" placeholder="Enter command..." class="command-input">
                                 <button id="sendCommand" class="send-btn">→</button>
+                                <button id="historyBtn" class="history-btn" title="Command History">⏱</button>
+                            </div>
+                            <div id="historyDropdown" class="history-dropdown hidden">
+                                <div class="history-header">Command History</div>
+                                <div id="historyList" class="history-list"></div>
                             </div>
                         </div>
                     </div>
@@ -383,6 +388,9 @@
             document.getElementById('commandInput').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendCommand();
             });
+            
+            // Command History
+            document.getElementById('historyBtn').addEventListener('click', toggleHistoryDropdown);
             
             // Node Card
             document.getElementById('closeNodeCard').addEventListener('click', closeNodeCard);
@@ -810,6 +818,80 @@
             
             log.appendChild(message);
             log.scrollTop = log.scrollHeight;
+        }
+        
+        async function toggleHistoryDropdown() {
+            const dropdown = document.getElementById('historyDropdown');
+            dropdown.classList.toggle('hidden');
+            if (!dropdown.classList.contains('hidden')) {
+                await loadCommandHistory();
+            }
+        }
+        
+        async function loadCommandHistory() {
+            try {
+                const response = await fetch(`${API_BASE}/api/command-history?limit=20`);
+                const history = await response.json();
+                
+                const historyList = document.getElementById('historyList');
+                if (history.length === 0) {
+                    historyList.innerHTML = '<div class="history-empty">No commands yet</div>';
+                    return;
+                }
+                
+                historyList.innerHTML = history.map(entry => `
+                    <div class="history-item" data-id="${entry.id}">
+                        <div class="history-command">${escapeHtml(entry.text)}</div>
+                        <div class="history-meta">
+                            <span class="history-intent">${entry.intent.replace('_', ' ')}</span>
+                            <span class="history-time">${formatTime(entry.createdAt)}</span>
+                        </div>
+                        <button class="history-rerun" title="Rerun">↻</button>
+                    </div>
+                `).join('');
+                
+                // Add rerun handlers
+                historyList.querySelectorAll('.history-rerun').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const item = e.target.closest('.history-item');
+                        const id = item.dataset.id;
+                        await rerunCommand(id);
+                    });
+                });
+                
+                // Click to populate input
+                historyList.querySelectorAll('.history-command').forEach(cmd => {
+                    cmd.addEventListener('click', () => {
+                        document.getElementById('commandInput').value = cmd.textContent;
+                        document.getElementById('historyDropdown').classList.add('hidden');
+                        document.getElementById('commandInput').focus();
+                    });
+                });
+                
+            } catch (error) {
+                console.error('Failed to load history:', error);
+            }
+        }
+        
+        async function rerunCommand(historyId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/command-history/${historyId}/rerun`, {
+                    method: 'POST'
+                });
+                const proposal = await response.json();
+                state.proposals.push(proposal);
+                addMessage('user', proposal.command);
+                addMessage('jarvis', proposal.dialecticalResponse.analysis);
+                showProposal(proposal);
+                document.getElementById('historyDropdown').classList.add('hidden');
+            } catch (error) {
+                console.error('Failed to rerun command:', error);
+            }
+        }
+        
+        function formatTime(isoString) {
+            const date = new Date(isoString);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
         
         function showProposal(proposal) {
