@@ -4,1460 +4,1472 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jarvis Research OS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="app">
-        <!-- Project Launcher (First Screen) -->
-        <div id="projectLauncher" class="screen active">
-            <div class="launcher-container">
-                <div class="launcher-header">
-                    <h1 class="launcher-title">Jarvis</h1>
-                    <p class="launcher-subtitle">Research OS</p>
+
+<div id="app">
+    <!-- ============ HEADER ============ -->
+    <header class="header">
+        <div class="header-logo">
+            <div class="logo-icon">J</div>
+            <div class="logo-text"><span>Jarvis</span> Research OS</div>
+        </div>
+        <div class="header-actions">
+            <div class="header-status">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Connecting...</span>
+            </div>
+            <button class="header-btn" onclick="resetState()" title="Reset to sample data">
+                &#x21bb; Reset
+            </button>
+            <button class="header-btn" onclick="regenerateGraph()" title="Regenerate edges">
+                &#x1F504; Connect
+            </button>
+            <button class="header-btn primary" onclick="showNewProjectInput()">
+                + New Project
+            </button>
+        </div>
+    </header>
+
+    <!-- ============ MAIN WORKSPACE ============ -->
+    <div class="workspace">
+
+        <!-- ======== LEFT SIDEBAR ======== -->
+        <aside class="sidebar">
+            <!-- Projects -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-header" onclick="toggleSection('projects')">
+                    <h3>&#x1F4C1; Projects <span class="section-count" id="projectCount">0</span></h3>
+                    <span class="sidebar-icon-btn" id="projectsToggle">&#x25BC;</span>
                 </div>
-                
-                <div class="launcher-actions">
-                    <button id="startNewProject" class="launcher-btn primary">
-                        <span class="btn-icon">+</span>
-                        <span class="btn-text">Start Research Project</span>
-                    </button>
-                    
-                    <button id="openRecentProjects" class="launcher-btn secondary">
-                        <span class="btn-icon">◷</span>
-                        <span class="btn-text">Open Recent</span>
-                    </button>
-                    
-                    <button id="inspectLibrary" class="launcher-btn secondary">
-                        <span class="btn-icon">☰</span>
-                        <span class="btn-text">Local Library</span>
-                    </button>
-                </div>
-                
-                <div id="recentProjectsList" class="recent-projects hidden">
-                    <!-- Populated dynamically -->
-                </div>
-                
-                <div id="libraryView" class="library-view hidden">
-                    <h3>Local Library Sources</h3>
-                    <div id="librarySourcesList"></div>
+                <div class="sidebar-section-body" id="projectsList"></div>
+                <div class="new-project-row hidden" id="newProjectRow">
+                    <input type="text" id="newProjectName" placeholder="Project name..." 
+                           onkeydown="if(event.key==='Enter')createProject()">
+                    <button onclick="createProject()">Create</button>
                 </div>
             </div>
-        </div>
-        
-        <!-- Source Onboarding -->
-        <div id="sourceOnboarding" class="screen">
-            <div class="onboarding-container">
-                <div class="onboarding-header">
-                    <button id="backToLauncher" class="back-btn">← Back</button>
-                    <h2 id="projectName">New Project</h2>
+
+            <!-- Sources -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-header" onclick="toggleSection('sources')">
+                    <h3>&#x1F4C4; Sources <span class="section-count" id="sourceCount">0</span></h3>
+                    <span class="sidebar-icon-btn" id="sourcesToggle">&#x25BC;</span>
                 </div>
-                
-                <div class="source-upload-area">
-                    <div class="upload-zone" id="dropZone">
-                        <p>Drop PDF files here or click to upload</p>
-                        <input type="file" id="fileInput" accept=".pdf" multiple hidden>
-                    </div>
-                    
-                    <div class="uploaded-sources" id="uploadedSourcesList">
-                        <!-- Populated dynamically -->
-                    </div>
+                <div class="sidebar-section-body" id="sourcesList"></div>
+                <div class="upload-zone" id="uploadZone"
+                     ondragover="handleDragOver(event)" 
+                     ondragleave="handleDragLeave(event)" 
+                     ondrop="handleDrop(event)"
+                     onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">&#x1F4E6;</div>
+                    <div class="upload-text">Drop PDF here or click to upload</div>
+                    <div class="upload-hint">Supports PDF, TXT, MD files</div>
                 </div>
-                
-                <div class="onboarding-actions">
-                    <button id="enterWorkbench" class="launcher-btn primary">
-                        Enter Workbench
-                    </button>
+                <input type="file" id="fileInput" accept=".pdf,.txt,.md,.html" 
+                       style="display:none" onchange="handleFileSelect(event)">
+                <div class="upload-progress" id="uploadProgress">
+                    <div class="progress-spinner"></div>
+                    <span class="progress-text" id="uploadProgressText">Processing...</span>
+                    <span class="progress-chunks" id="uploadChunks"></span>
                 </div>
             </div>
-        </div>
-        
-        <!-- Main Workbench -->
-        <div id="workbench" class="screen">
-            <!-- Dock Bar -->
-            <div id="dockBar" class="dock-bar">
-                <button class="dock-btn" data-dock="left" title="Toggle Left Panel">
-                    <span>◰</span>
+
+            <!-- Pivots -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-header" onclick="toggleSection('pivots')">
+                    <h3>&#x1F527; Pivots <span class="section-count" id="pivotCount">0</span></h3>
+                    <span class="sidebar-icon-btn" id="pivotsToggle">&#x25BC;</span>
+                </div>
+                <div class="sidebar-section-body" id="pivotsList"></div>
+            </div>
+        </aside>
+
+        <!-- ======== CENTER CANVAS ======== -->
+        <main class="canvas-area">
+            <div class="canvas-toolbar">
+                <div class="canvas-toolbar-left">
+                    <span class="toolbar-btn active" id="btnSelect" onclick="setCanvasMode('select')">
+                        &#x1F5B1; Select
+                    </span>
+                    <span class="toolbar-btn" id="btnPan" onclick="setCanvasMode('pan')">
+                        &#x270B; Pan
+                    </span>
+                </div>
+                <div class="canvas-stats" id="canvasStats">
+                    <span><span class="stat-dot" style="background:var(--accent)"></span> <span id="nodeCount">0</span> nodes</span>
+                    <span><span class="stat-dot" style="background:var(--teal)"></span> <span id="edgeCount">0</span> edges</span>
+                </div>
+                <div class="canvas-toolbar-right">
+                    <span class="toolbar-btn" onclick="zoomCanvas(1.2)">&#x2795;</span>
+                    <span class="toolbar-btn" onclick="zoomCanvas(0.8)">&#x2796;</span>
+                    <span class="toolbar-btn" onclick="fitGraph()">&#x2922; Fit</span>
+                </div>
+            </div>
+            <div class="canvas-container" id="canvasContainer">
+                <canvas id="graphCanvas"></canvas>
+                <div class="canvas-tooltip" id="canvasTooltip"></div>
+                <div class="loading-overlay" id="canvasLoading">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ======== RIGHT PANEL ======== -->
+        <aside class="right-panel">
+            <div class="right-panel-header">
+                <h2>&#x1F9E0; Analysis</h2>
+            </div>
+            <div class="right-panel-tabs">
+                <button class="right-panel-tab active" onclick="switchRightTab('proposals')" id="tabProposals">
+                    Proposals
                 </button>
-                <button class="dock-btn" data-dock="right" title="Toggle Right Panel">
-                    <span>◳</span>
+                <button class="right-panel-tab" onclick="switchRightTab('node')" id="tabNode">
+                    Node Details
                 </button>
-                <button class="dock-btn" data-dock="bottom" title="Toggle Bottom Panel">
-                    <span>◱</span>
-                </button>
-                <div class="dock-spacer"></div>
-                <button id="projectSwitcher" class="dock-btn" title="Switch Project">
-                    <span>⚙</span>
+                <button class="right-panel-tab" onclick="switchRightTab('search')" id="tabSearch">
+                    Search
                 </button>
             </div>
-            
-            <!-- Dock Zones -->
-            <div id="dockManager" class="dock-manager">
-                <!-- Left Zone -->
-                <div id="leftZone" class="dock-zone left">
-                    <div class="zone-header">
-                        <span>Sources</span>
-                        <button class="zone-minimize">−</button>
+            <div class="right-panel-content" id="rightPanelContent">
+                <!-- Proposals View -->
+                <div id="proposalsView">
+                    <div class="empty-state" id="proposalsEmpty">
+                        <div class="empty-icon">&#x1F4AC;</div>
+                        <h3>No proposals yet</h3>
+                        <p>Type a command in the bar below to start your research session</p>
                     </div>
-                    <div class="zone-content" id="sourceTray">
-                        <!-- Source tray content -->
-                    </div>
+                    <div id="proposalsList"></div>
                 </div>
-                
-                <!-- Center Zone -->
-                <div id="centerZone" class="dock-zone center">
-                    <!-- Graph Window -->
-                    <div id="graphWindow" class="dock-window">
-                        <div class="window-header">
-                            <span class="window-title">Research Graph</span>
-                            <div class="window-controls">
-                                <button class="window-minimize">−</button>
-                                <button class="window-close">×</button>
-                            </div>
-                        </div>
-                        <div class="window-content" id="graphContainer">
-                            <div id="graphCanvas" class="graph-canvas">
-                                <!-- Graph nodes rendered here -->
-                            </div>
-                        </div>
+                <!-- Node Details View -->
+                <div id="nodeView" class="hidden">
+                    <div class="empty-state" id="nodeEmpty">
+                        <div class="empty-icon">&#x1F5FA;</div>
+                        <h3>Select a node</h3>
+                        <p>Click on any node in the graph to view its details and connections</p>
                     </div>
-                    
-                    <!-- Tabs Area for Generated Preview Tabs -->
-                    <div id="tabsArea" class="tabs-area">
-                        <!-- Generated preview tabs -->
-                    </div>
+                    <div class="node-detail hidden" id="nodeDetail"></div>
                 </div>
-                
-                <!-- Right Zone -->
-                <div id="rightZone" class="dock-zone right">
-                    <!-- Command Console (AI Chat Interface) -->
-                    <div id="commandConsole" class="dock-window">
-                        <div class="window-header">
-                            <span class="window-title">Jarvis</span>
-                            <div class="window-controls">
-                                <button class="window-minimize">−</button>
-                            </div>
-                        </div>
-                        <div class="window-content">
-                            <div id="conversationLog" class="conversation-log">
-                                <!-- Conversation messages -->
-                            </div>
-                            <div id="proposalArea" class="proposal-area hidden">
-                                <!-- Generated proposals -->
-                            </div>
-                            <div class="command-input-area">
-                                <input type="text" id="commandInput" placeholder="Enter command..." class="command-input">
-                                <button id="sendCommand" class="send-btn">→</button>
-                                <button id="historyBtn" class="history-btn" title="Command History">⏱</button>
-                            </div>
-                            <div id="historyDropdown" class="history-dropdown hidden">
-                                <div class="history-header">Command History</div>
-                                <div id="historyList" class="history-list"></div>
-                            </div>
-                        </div>
+                <!-- Search View -->
+                <div id="searchView" class="hidden">
+                    <div class="new-project-row" style="padding:0 0 14px;">
+                        <input type="text" id="searchInput" placeholder="Search your sources..." 
+                               onkeydown="if(event.key==='Enter')performSearch()">
+                        <button onclick="performSearch()">Search</button>
                     </div>
-                    
-                    <!-- Notes/Thought States -->
-                    <div id="thoughtStatesWindow" class="dock-window hidden">
-                        <div class="window-header">
-                            <span class="window-title">Thought States</span>
-                            <div class="window-controls">
-                                <button class="window-minimize">−</button>
-                            </div>
-                        </div>
-                        <div class="window-content" id="thoughtStatesList">
-                            <!-- Thought states -->
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Bottom Zone -->
-                <div id="bottomZone" class="dock-zone bottom hidden">
-                    <!-- Pivots Window -->
-                    <div id="pivotsWindow" class="dock-window">
-                        <div class="window-header">
-                            <span class="window-title">Research Pivots</span>
-                            <div class="window-controls">
-                                <button class="window-add" title="Create Pivot">+</button>
-                                <button class="window-minimize">−</button>
-                            </div>
-                        </div>
-                        <div class="window-content" id="pivotsList">
-                            <!-- Pivots -->
+                    <div id="searchResults">
+                        <div class="empty-state">
+                            <div class="empty-icon">&#x1F50D;</div>
+                            <h3>Semantic search</h3>
+                            <p>Search across all your uploaded sources using natural language queries</p>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Node Card Overlay -->
-        <div id="nodeCardOverlay" class="overlay hidden">
-            <div id="nodeCard" class="node-card">
-                <div class="node-card-header">
-                    <h3 id="nodeCardTitle">Concept Name</h3>
-                    <button id="closeNodeCard" class="close-btn">×</button>
-                </div>
-                <div class="node-card-content">
-                    <div class="node-info">
-                        <div class="info-row">
-                            <span class="info-label">Status:</span>
-                            <span id="nodeStatus" class="info-value">concept</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Domain:</span>
-                            <span id="nodeDomain" class="info-value">—</span>
-                        </div>
-                    </div>
-                    
-                    <div class="connected-concepts">
-                        <h4>Connected Concepts</h4>
-                        <div id="connectedList">
-                            <!-- Connected nodes -->
-                        </div>
-                    </div>
-                    
-                    <div class="related-pivots">
-                        <h4>Related Pivots</h4>
-                        <div id="relatedPivotsList">
-                            <!-- Related pivots -->
-                        </div>
-                    </div>
-                    
-                    <div class="source-references">
-                        <h4>Source References</h4>
-                        <div id="sourceRefsList">
-                            <!-- Fragment references -->
-                        </div>
-                    </div>
-                    
-                    <div class="node-quick-commands">
-                        <h4>Actions</h4>
-                        <div class="quick-commands">
-                            <button class="quick-cmd" data-action="bridge">Bridge</button>
-                            <button class="quick-cmd" data-action="formalise">Formalise</button>
-                            <button class="quick-cmd" data-action="compare">Compare</button>
-                            <button class="quick-cmd" data-action="mark">Mark Status</button>
-                            <button class="quick-cmd" data-action="history">Open History</button>
-                        </div>
-                    </div>
-                    
-                    <div class="node-hyperlinks">
-                        <h4>Navigate</h4>
-                        <div class="hyperlinks">
-                            <a href="#" class="node-link" data-action="open-generated">Open Generated Windows</a>
-                            <a href="#" class="node-link" data-action="open-fragment">Source Fragments</a>
-                            <a href="#" class="node-link" data-action="open-pivot">Pivot Cards</a>
-                            <a href="#" class="node-link" data-action="open-thoughts">Saved Thought States</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Fragment Window Overlay -->
-        <div id="fragmentOverlay" class="overlay hidden">
-            <div id="fragmentWindow" class="fragment-window">
-                <div class="fragment-header">
-                    <div class="fragment-info">
-                        <h3 id="fragmentTitle">Fragment</h3>
-                        <span id="fragmentSource" class="fragment-source">Source Name</span>
-                    </div>
-                    <div class="fragment-controls">
-                        <button id="prevPage" class="page-nav">‹ Prev</button>
-                        <span id="pageIndicator">Page 1</span>
-                        <button id="nextPage" class="page-nav">Next ›</button>
-                        <button id="closeFragment" class="close-btn">×</button>
-                    </div>
-                </div>
-                <div class="fragment-content">
-                    <div class="fragment-text" id="fragmentText">
-                        <!-- Retrieved passage text -->
-                    </div>
-                    <div class="pdf-viewer" id="pdfViewer">
-                        <iframe id="pdfFrame" class="pdf-frame"></iframe>
-                    </div>
-                </div>
-                <div class="fragment-actions">
-                    <button class="frag-action" data-action="quote">Quote into Workspace</button>
-                    <button class="frag-action" data-action="open-source">Open Source Window</button>
-                    <button class="frag-action" data-action="ask-jarvis">Ask Jarvis</button>
-                    <button class="frag-action" data-action="save-thought">Save as Thought State</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Add Node Button -->
-        <button id="addNodeBtn" class="floating-action hidden" title="Add Node">+</button>
+        </aside>
+
     </div>
-    
-    <script>
-        // ============================================
-        // JARVIS RESEARCH OS - Frontend Application
-        // ============================================
-        
-        const API_BASE = '';
-        
-        // State management
-        let state = {
-            projects: [],
-            activeProjectId: null,
-            projectSources: [],
-            localLibrarySources: [],
-            sourceLinkApprovals: [],
-            proposals: [],
-            thoughtStates: [],
-            pivots: [],
-            nodes: [],
-            edges: [],
-            fragments: [],
-            windows: {
-                focused: null,
-                minimized: []
-            },
-            dockZones: {
-                left: ['sourceTray'],
-                center: ['graphWindow'],
-                right: ['commandConsole'],
-                bottom: []
-            }
-        };
-        
-        // Current UI state
-        let currentView = 'launcher'; // launcher, onboarding, workbench
-        let currentProject = null;
-        let currentNodeCard = null;
-        let currentFragment = null;
-        
-        // ============================================
-        // INITIALIZATION
-        // ============================================
-        
-        document.addEventListener('DOMContentLoaded', async () => {
-            await loadState();
-            setupEventListeners();
-            render();
-        });
-        
-        async function loadState() {
-            try {
-                const response = await fetch(`${API_BASE}/api/state`);
-                if (response.ok) {
-                    const serverState = await response.json();
-                    state = { ...state, ...serverState };
-                }
-            } catch (error) {
-                console.log('Using initial state');
-            }
-        }
-        
-        async function saveState() {
-            try {
-                await fetch(`${API_BASE}/api/state`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(state)
-                });
-            } catch (error) {
-                console.error('Failed to save state:', error);
-            }
-        }
-        
-        // ============================================
-        // EVENT LISTENERS
-        // ============================================
-        
-        function setupEventListeners() {
-            // Project Launcher
-            document.getElementById('startNewProject').addEventListener('click', startNewProject);
-            document.getElementById('openRecentProjects').addEventListener('click', toggleRecentProjects);
-            document.getElementById('inspectLibrary').addEventListener('click', toggleLibraryView);
-            
-            // Source Onboarding
-            document.getElementById('backToLauncher').addEventListener('click', backToLauncher);
-            document.getElementById('dropZone').addEventListener('click', () => document.getElementById('fileInput').click());
-            document.getElementById('fileInput').addEventListener('change', handleFileUpload);
-            document.getElementById('enterWorkbench').addEventListener('click', enterWorkbench);
-            
-            // Dock Bar
-            document.querySelectorAll('.dock-btn[data-dock]').forEach(btn => {
-                btn.addEventListener('click', () => toggleDockZone(btn.dataset.dock));
-            });
-            document.getElementById('projectSwitcher').addEventListener('click', showProjectSwitcher);
-            
-            // Command Console
-            document.getElementById('sendCommand').addEventListener('click', sendCommand);
-            document.getElementById('commandInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') sendCommand();
-            });
-            
-            // Command History
-            document.getElementById('historyBtn').addEventListener('click', toggleHistoryDropdown);
-            
-            // Node Card
-            document.getElementById('closeNodeCard').addEventListener('click', closeNodeCard);
-            document.querySelectorAll('.quick-cmd').forEach(btn => {
-                btn.addEventListener('click', () => handleNodeAction(btn.dataset.action));
-            });
-            
-            // Fragment Window
-            document.getElementById('closeFragment').addEventListener('click', closeFragment);
-            document.getElementById('prevPage').addEventListener('click', () => navigatePage(-1));
-            document.getElementById('nextPage').addEventListener('click', () => navigatePage(1));
-            document.querySelectorAll('.frag-action').forEach(btn => {
-                btn.addEventListener('click', () => handleFragmentAction(btn.dataset.action));
-            });
-            
-            // Add Node Button
-            document.getElementById('addNodeBtn').addEventListener('click', showAddNodeDialog);
-            
-            // Window minimize/close
-            document.querySelectorAll('.window-minimize').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const window = e.target.closest('.dock-window');
-                    minimizeWindow(window.id);
-                });
-            });
-            
-            document.querySelectorAll('.window-close').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const window = e.target.closest('.dock-window');
-                    closeWindow(window.id);
-                });
-            });
-            
-            // Zone minimize
-            document.querySelectorAll('.zone-minimize').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const zone = e.target.closest('.dock-zone');
-                    minimizeZone(zone.id);
-                });
-            });
-            
-            // Pivots
-            document.querySelector('.window-add').addEventListener('click', createPivot);
-        }
-        
-        // ============================================
-        // NAVIGATION & SCREENS
-        // ============================================
-        
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.remove('active');
-            });
-            document.getElementById(screenId).classList.add('active');
-            currentView = screenId;
-        }
-        
-        function showProjectNameModal() {
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.id = 'projectNameModal';
-            modal.innerHTML = `
-                <div class="modal-content project-modal">
-                    <h3>New Research Project</h3>
-                    <input type="text" id="projectNameInput" placeholder="Project name" value="New Research Project">
-                    <div class="modal-actions">
-                        <button id="cancelProject" class="cancel-btn">Cancel</button>
-                        <button id="confirmProject" class="confirm-btn">Create</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            
-            document.getElementById('projectNameInput').focus();
-            document.getElementById('projectNameInput').select();
-            
-            document.getElementById('cancelProject').addEventListener('click', () => modal.remove());
-            document.getElementById('confirmProject').addEventListener('click', () => {
-                const name = document.getElementById('projectNameInput').value.trim();
-                if (name) {
-                    modal.remove();
-                    createProject(name);
-                }
-            });
-            
-            document.getElementById('projectNameInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    const name = document.getElementById('projectNameInput').value.trim();
-                    if (name) {
-                        modal.remove();
-                        createProject(name);
-                    }
-                }
-            });
-            
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) modal.remove();
-            });
-        }
-        
-        async function createProject(projectName) {
-            try {
-                const response = await fetch(`${API_BASE}/api/projects`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: projectName })
-                });
-                const project = await response.json();
-                state.projects.push(project);
-                state.activeProjectId = project.id;
-                currentProject = project;
-                
-                document.getElementById('projectName').textContent = projectName;
-                showScreen('sourceOnboarding');
-            } catch (error) {
-                console.error('Failed to create project:', error);
-            }
-        }
-        
-        async function startNewProject() {
-            showProjectNameModal();
-        }
-        
-        function toggleRecentProjects() {
-            const list = document.getElementById('recentProjectsList');
-            list.classList.toggle('hidden');
-            document.getElementById('libraryView').classList.add('hidden');
-            
-            if (!list.classList.contains('hidden')) {
-                renderRecentProjects();
-            }
-        }
-        
-        function renderRecentProjects() {
-            const list = document.getElementById('recentProjectsList');
-            if (state.projects.length === 0) {
-                list.innerHTML = '<p class="empty-state">No recent projects</p>';
-                return;
-            }
-            
-            list.innerHTML = state.projects.map(project => `
-                <div class="recent-project-item" data-id="${project.id}">
-                    <span class="project-name">${project.name}</span>
-                    <span class="project-date">${formatDate(project.createdAt)}</span>
-                </div>
-            `).join('');
-            
-            list.querySelectorAll('.recent-project-item').forEach(item => {
-                item.addEventListener('click', () => openProject(item.dataset.id));
-            });
-        }
-        
-        async function openProject(projectId) {
-            try {
-                const response = await fetch(`${API_BASE}/api/projects/${projectId}`);
-                const project = await response.json();
-                state.activeProjectId = projectId;
-                currentProject = project;
-                
-                // Set as active project on server
-                await fetch(`${API_BASE}/api/projects/active`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ projectId })
-                });
-                
-                // Check if project has sources
-                if (project.sources && project.sources.length > 0) {
-                    enterWorkbench();
-                } else {
-                    document.getElementById('projectName').textContent = project.name;
-                    showScreen('sourceOnboarding');
-                }
-            } catch (error) {
-                console.error('Failed to open project:', error);
-            }
-        }
-        
-        function toggleLibraryView() {
-            const view = document.getElementById('libraryView');
-            view.classList.toggle('hidden');
-            document.getElementById('recentProjectsList').classList.add('hidden');
-            
-            if (!view.classList.contains('hidden')) {
-                renderLibrarySources();
-            }
-        }
-        
-        function renderLibrarySources() {
-            const list = document.getElementById('librarySourcesList');
-            if (state.localLibrarySources.length === 0) {
-                list.innerHTML = '<p class="empty-state">No sources in library</p>';
-                return;
-            }
-            
-            list.innerHTML = state.localLibrarySources.map(sourceId => {
-                const source = state.projectSources.find(s => s.id === sourceId);
-                return source ? `
-                    <div class="library-source-item" data-id="${source.id}">
-                        <span class="source-name">${source.name}</span>
-                    </div>
-                ` : '';
-            }).join('');
-        }
-        
-        function backToLauncher() {
-            showScreen('projectLauncher');
-        }
-        
-        async function enterWorkbench() {
-            showScreen('workbench');
-            document.getElementById('addNodeBtn').classList.remove('hidden');
-            await loadProjectData();
-            renderWorkbench();
-        }
-        
-        async function loadProjectData() {
-            if (!state.activeProjectId) return;
-            
-            try {
-                // Load project sources
-                const sourcesRes = await fetch(`${API_BASE}/api/projects/${state.activeProjectId}/sources`);
-                state.projectSources = await sourcesRes.json();
-                
-                // Load nodes
-                const nodesRes = await fetch(`${API_BASE}/api/nodes`);
-                state.nodes = await nodesRes.json();
-                
-                // Load pivots
-                const pivotsRes = await fetch(`${API_BASE}/api/pivots`);
-                state.pivots = await pivotsRes.json();
-                
-                // Load thought states
-                const thoughtsRes = await fetch(`${API_BASE}/api/thought-states`);
-                state.thoughtStates = await thoughtsRes.json();
-                
-            } catch (error) {
-                console.error('Failed to load project data:', error);
-            }
-        }
-        
-        // ============================================
-        // FILE UPLOAD
-        // ============================================
-        
-        async function handleFileUpload(e) {
-            const files = e.target.files;
-            if (!files.length) return;
-            
-            for (const file of files) {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('projectId', state.activeProjectId);
-                
-                try {
-                    const response = await fetch(`${API_BASE}/api/upload`, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    const source = await response.json();
-                    state.projectSources.push(source);
-                } catch (error) {
-                    console.error('Upload failed:', error);
-                }
-            }
-            
-            renderUploadedSources();
-        }
-        
-        function renderUploadedSources() {
-            const list = document.getElementById('uploadedSourcesList');
-            const projectSources = state.projectSources.filter(s => s.projectId === state.activeProjectId);
-            
-            if (projectSources.length === 0) {
-                list.innerHTML = '';
-                return;
-            }
-            
-            list.innerHTML = projectSources.map(source => `
-                <div class="source-item" data-id="${source.id}">
-                    <span class="source-icon">📄</span>
-                    <span class="source-name">${source.name}</span>
-                    <button class="source-remove" data-id="${source.id}">×</button>
-                </div>
-            `).join('');
-            
-            list.querySelectorAll('.source-remove').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    await removeSource(btn.dataset.id);
-                });
-            });
-        }
-        
-        async function removeSource(sourceId) {
-            try {
-                await fetch(`${API_BASE}/api/sources/${sourceId}`, { method: 'DELETE' });
-                state.projectSources = state.projectSources.filter(s => s.id !== sourceId);
-                renderUploadedSources();
-                document.getElementById('enterWorkbench').disabled = state.projectSources.length === 0;
-            } catch (error) {
-                console.error('Failed to remove source:', error);
-            }
-        }
-        
-        // ============================================
-        // DOCKABLE WINDOW SYSTEM
-        // ============================================
-        
-        function toggleDockZone(zone) {
-            const zoneEl = document.getElementById(`${zone}Zone`);
-            if (zoneEl) {
-                zoneEl.classList.toggle('hidden');
-            }
-        }
-        
-        function minimizeWindow(windowId) {
-            const windowEl = document.getElementById(windowId);
-            if (windowEl) {
-                windowEl.classList.toggle('minimized');
-            }
-        }
-        
-        function closeWindow(windowId) {
-            const windowEl = document.getElementById(windowId);
-            if (windowEl) {
-                windowEl.classList.add('hidden');
-            }
-        }
-        
-        function minimizeZone(zoneId) {
-            const zoneEl = document.getElementById(zoneId);
-            if (zoneEl) {
-                zoneEl.classList.toggle('minimized');
-            }
-        }
-        
-        function showProjectSwitcher() {
-            const projects = state.projects.map(p => 
-                `<div class="project-switcher-item" data-id="${p.id}">${p.name}</div>`
-            ).join('');
-            
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <h3>Switch Project</h3>
-                    <div class="project-list">${projects || '<p class="empty-state">No projects</p>'}</div>
-                    <button class="modal-close">Cancel</button>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            
-            modal.querySelector('.modal-close').addEventListener('click', () => modal.remove());
-            modal.querySelectorAll('.project-switcher-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    openProject(item.dataset.id);
-                    modal.remove();
-                });
-            });
-            
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) modal.remove();
-            });
-        }
-        
-        // ============================================
-        // COMMAND CONSOLE (AI Chat Interface - CORE)
-        // ============================================
-        
-        async function sendCommand() {
-            const input = document.getElementById('commandInput');
-            const command = input.value.trim();
-            if (!command) return;
-            
-            input.value = '';
-            
-            // Add user message to conversation
-            addMessage('user', command);
-            
-            // Process command and create proposal
-            try {
-                const response = await fetch(`${API_BASE}/api/command`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        command,
-                        context: {
-                            projectId: state.activeProjectId,
-                            nodes: state.nodes,
-                            pivots: state.pivots
-                        }
-                    })
-                });
-                
-                const proposal = await response.json();
-                state.proposals.push(proposal);
-                
-                // Add Jarvis response
-                addMessage('jarvis', proposal.dialecticalResponse.analysis);
-                
-                // Show proposal area with preview tabs
-                showProposal(proposal);
-                
-            } catch (error) {
-                console.error('Command failed:', error);
-                addMessage('jarvis', 'I encountered an error processing your command. Please try again.');
-            }
-        }
-        
-        function addMessage(type, content) {
-            const log = document.getElementById('conversationLog');
-            const message = document.createElement('div');
-            message.className = `message ${type}`;
-            
-            if (type === 'user') {
-                message.innerHTML = `<div class="message-content">${escapeHtml(content)}</div>`;
-            } else {
-                message.innerHTML = `
-                    <div class="message-label">Jarvis</div>
-                    <div class="message-content">${escapeHtml(content)}</div>
-                `;
-            }
-            
-            log.appendChild(message);
-            log.scrollTop = log.scrollHeight;
-        }
-        
-        async function toggleHistoryDropdown() {
-            const dropdown = document.getElementById('historyDropdown');
-            dropdown.classList.toggle('hidden');
-            if (!dropdown.classList.contains('hidden')) {
-                await loadCommandHistory();
-            }
-        }
-        
-        async function loadCommandHistory() {
-            try {
-                const response = await fetch(`${API_BASE}/api/command-history?limit=20`);
-                const history = await response.json();
-                
-                const historyList = document.getElementById('historyList');
-                if (history.length === 0) {
-                    historyList.innerHTML = '<div class="history-empty">No commands yet</div>';
-                    return;
-                }
-                
-                historyList.innerHTML = history.map(entry => `
-                    <div class="history-item" data-id="${entry.id}">
-                        <div class="history-command">${escapeHtml(entry.text)}</div>
-                        <div class="history-meta">
-                            <span class="history-intent">${entry.intent.replace('_', ' ')}</span>
-                            <span class="history-time">${formatTime(entry.createdAt)}</span>
-                        </div>
-                        <button class="history-rerun" title="Rerun">↻</button>
-                    </div>
-                `).join('');
-                
-                // Add rerun handlers
-                historyList.querySelectorAll('.history-rerun').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        const item = e.target.closest('.history-item');
-                        const id = item.dataset.id;
-                        await rerunCommand(id);
-                    });
-                });
-                
-                // Click to populate input
-                historyList.querySelectorAll('.history-command').forEach(cmd => {
-                    cmd.addEventListener('click', () => {
-                        document.getElementById('commandInput').value = cmd.textContent;
-                        document.getElementById('historyDropdown').classList.add('hidden');
-                        document.getElementById('commandInput').focus();
-                    });
-                });
-                
-            } catch (error) {
-                console.error('Failed to load history:', error);
-            }
-        }
-        
-        async function rerunCommand(historyId) {
-            try {
-                const response = await fetch(`${API_BASE}/api/command-history/${historyId}/rerun`, {
-                    method: 'POST'
-                });
-                const proposal = await response.json();
-                state.proposals.push(proposal);
-                addMessage('user', proposal.command);
-                addMessage('jarvis', proposal.dialecticalResponse.analysis);
-                showProposal(proposal);
-                document.getElementById('historyDropdown').classList.add('hidden');
-            } catch (error) {
-                console.error('Failed to rerun command:', error);
-            }
-        }
-        
-        function formatTime(isoString) {
-            const date = new Date(isoString);
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
-        
-        function showProposal(proposal) {
-            const area = document.getElementById('proposalArea');
-            area.classList.remove('hidden');
-            
-            area.innerHTML = `
-                <div class="proposal-card" data-id="${proposal.id}">
-                    <div class="proposal-header">
-                        <span class="proposal-type">${proposal.type.replace('_', ' ')}</span>
-                        <span class="proposal-rationale">${proposal.rationale}</span>
-                    </div>
-                    <div class="proposal-tabs">
-                        ${proposal.previewTabs.map(tab => `
-                            <div class="preview-tab" data-tab-id="${tab.id}">
-                                <div class="tab-title">${tab.title}</div>
-                                <div class="tab-type">${tab.type}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div class="proposal-actions">
-                        <button class="proposal-approve" data-id="${proposal.id}">Approve</button>
-                        <button class="proposal-reject" data-id="${proposal.id}">Reject</button>
-                    </div>
-                </div>
-            `;
-            
-            // Add event listeners for approve/reject
-            area.querySelector('.proposal-approve').addEventListener('click', () => approveProposal(proposal.id));
-            area.querySelector('.proposal-reject').addEventListener('click', () => rejectProposal(proposal.id));
-            
-            // Add preview tabs to tabs area
-            proposal.previewTabs.forEach(tab => {
-                addPreviewTab(tab);
-            });
-        }
-        
-        function addPreviewTab(tab) {
-            const tabsArea = document.getElementById('tabsArea');
-            const tabEl = document.createElement('div');
-            tabEl.className = 'preview-tab-item';
-            tabEl.id = `tab-${tab.id}`;
-            tabEl.innerHTML = `
-                <div class="preview-tab-header">
-                    <span class="preview-tab-title">${tab.title}</span>
-                    <button class="preview-tab-close">×</button>
-                </div>
-                <div class="preview-tab-content">
-                    ${renderPreviewContent(tab)}
-                </div>
-            `;
-            
-            tabEl.querySelector('.preview-tab-close').addEventListener('click', () => {
-                tabEl.remove();
-            });
-            
-            tabsArea.appendChild(tabEl);
-        }
-        
-        function renderPreviewContent(tab) {
-            switch (tab.type) {
-                case 'graph_preview':
-                    return `<div class="graph-preview">
-                        <div class="preview-node">${tab.content.node?.name || 'New Node'}</div>
-                    </div>`;
-                case 'pivot_preview':
-                    return `<div class="pivot-preview">
-                        <div class="preview-pivot-name">${tab.content.pivot?.name || 'New Pivot'}</div>
-                        <div class="preview-pivot-status">Status: ${tab.content.pivot?.status || 'open'}</div>
-                    </div>`;
-                case 'concept_card_preview':
-                    return `<div class="concept-preview">
-                        <div class="preview-concept-name">${tab.content.concept?.name || 'Concept'}</div>
-                    </div>`;
-                case 'analysis_preview':
-                    return `<div class="analysis-preview">
-                        <p>${tab.content.analysis || ''}</p>
-                    </div>`;
-                default:
-                    return `<div class="generic-preview">
-                        <p>Preview content</p>
-                    </div>`;
-            }
-        }
-        
-        async function approveProposal(proposalId) {
-            try {
-                const response = await fetch(`${API_BASE}/api/proposals/${proposalId}/approve`, {
-                    method: 'POST'
-                });
-                const result = await response.json();
-                
-                if (result.success) {
-                    addMessage('jarvis', 'Proposal approved. Changes have been committed to your project.');
-                    document.getElementById('proposalArea').classList.add('hidden');
-                    
-                    // Remove preview tabs
-                    const proposal = state.proposals.find(p => p.id === proposalId);
-                    if (proposal) {
-                        proposal.previewTabs.forEach(tab => {
-                            const tabEl = document.getElementById(`tab-${tab.id}`);
-                            if (tabEl) tabEl.remove();
-                        });
-                    }
-                    
-                    // Refresh data and re-render
-                    await loadState();
-                    renderGraph();
-                }
-            } catch (error) {
-                console.error('Failed to approve proposal:', error);
-            }
-        }
-        
-        async function rejectProposal(proposalId) {
-            try {
-                const response = await fetch(`${API_BASE}/api/proposals/${proposalId}/reject`, {
-                    method: 'POST'
-                });
-                const result = await response.json();
-                
-                if (result.success) {
-                    addMessage('jarvis', 'Proposal rejected. No changes were made.');
-                    document.getElementById('proposalArea').classList.add('hidden');
-                    
-                    // Remove preview tabs
-                    const proposal = state.proposals.find(p => p.id === proposalId);
-                    if (proposal) {
-                        proposal.previewTabs.forEach(tab => {
-                            const tabEl = document.getElementById(`tab-${tab.id}`);
-                            if (tabEl) tabEl.remove();
-                        });
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to reject proposal:', error);
-            }
-        }
-        
-        // ============================================
-        // GRAPH & NODE CARDS
-        // ============================================
-        
-        async function renderWorkbench() {
-            await loadProjectData();
-            renderGraph();
-            renderSourceTray();
-            renderPivotsList();
-            renderThoughtStates();
-        }
-        
-        function renderGraph() {
-            const canvas = document.getElementById('graphCanvas');
-            
-            if (state.nodes.length === 0) {
-                canvas.innerHTML = `
-                    <div class="empty-graph">
-                        <p>No nodes yet</p>
-                        <p class="hint">Use commands to add nodes to your research graph</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Simple circular layout for nodes
-            const centerX = canvas.offsetWidth / 2 || 400;
-            const centerY = canvas.offsetHeight / 2 || 300;
-            const radius = 150;
-            
-            canvas.innerHTML = state.nodes.map((node, index) => {
-                const angle = (2 * Math.PI * index) / state.nodes.length;
-                const x = centerX + radius * Math.cos(angle);
-                const y = centerY + radius * Math.sin(angle);
-                
-                return `
-                    <div class="graph-node" 
-                         data-id="${node.id}"
-                         style="left: ${x}px; top: ${y}px;"
-                         onclick="showNodeCard('${node.id}')">
-                        <span class="node-name">${node.name}</span>
-                        <span class="node-status ${node.status}">${node.status}</span>
-                    </div>
-                `;
-            }).join('');
-            
-            // Render edges
-            renderEdges(canvas);
-        }
-        
-        function renderEdges(canvas) {
-            const edgesHtml = state.edges.map(edge => {
-                const fromNode = state.nodes.find(n => n.id === edge.from);
-                const toNode = state.nodes.find(n => n.id === edge.to);
-                
-                if (!fromNode || !toNode) return '';
-                
-                // Calculate positions (simplified)
-                return `<div class="graph-edge" data-from="${edge.from}" data-to="${edge.to}"></div>`;
-            }).join('');
-            
-            canvas.innerHTML += edgesHtml;
-        }
-        
-        async function showNodeCard(nodeId) {
-            try {
-                const response = await fetch(`${API_BASE}/api/nodes/${nodeId}`);
-                const node = await response.json();
-                currentNodeCard = node;
-                
-                document.getElementById('nodeCardTitle').textContent = node.name;
-                document.getElementById('nodeStatus').textContent = node.status || 'concept';
-                document.getElementById('nodeDomain').textContent = node.domain || '—';
-                
-                // Render connected concepts
-                const connectedList = document.getElementById('connectedList');
-                if (node.connected && node.connected.length > 0) {
-                    connectedList.innerHTML = node.connected.map(c => `
-                        <div class="connected-item" onclick="showNodeCard('${c.node.id}')">
-                            <span class="connected-name">${c.node.name}</span>
-                            <span class="connected-type">${c.edgeType}</span>
-                        </div>
-                    `).join('');
-                } else {
-                    connectedList.innerHTML = '<p class="empty-state">No connections</p>';
-                }
-                
-                // Render related pivots
-                const pivotsList = document.getElementById('relatedPivotsList');
-                if (node.pivots && node.pivots.length > 0) {
-                    pivotsList.innerHTML = node.pivots.map(p => `
-                        <div class="pivot-item" onclick="showPivotCard('${p.id}')">
-                            ${p.name}
-                        </div>
-                    `).join('');
-                } else {
-                    pivotsList.innerHTML = '<p class="empty-state">No related pivots</p>';
-                }
-                
-                document.getElementById('nodeCardOverlay').classList.remove('hidden');
-                
-            } catch (error) {
-                console.error('Failed to load node:', error);
-            }
-        }
-        
-        function closeNodeCard() {
-            document.getElementById('nodeCardOverlay').classList.add('hidden');
-            currentNodeCard = null;
-        }
-        
-        async function handleNodeAction(action) {
-            if (!currentNodeCard) return;
-            
-            switch (action) {
-                case 'bridge':
-                    addMessage('jarvis', `Bridging concept: ${currentNodeCard.name}`);
-                    break;
-                case 'formalise':
-                    addMessage('jarvis', `Formalizing concept: ${currentNodeCard.name}`);
-                    break;
-                case 'compare':
-                    addMessage('jarvis', `Comparing concept: ${currentNodeCard.name}`);
-                    break;
-                case 'mark':
-                    const status = prompt('Enter new status:', currentNodeCard.status || 'concept');
-                    if (status) {
-                        await fetch(`${API_BASE}/api/nodes/${currentNodeCard.id}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ status })
-                        });
-                        await loadProjectData();
-                        renderGraph();
-                    }
-                    break;
-                case 'history':
-                    addMessage('jarvis', `Showing history for: ${currentNodeCard.name}`);
-                    break;
-            }
-        }
-        
-        function showAddNodeDialog() {
-            const nodeName = prompt('Enter node name:', 'New Concept');
-            if (!nodeName) return;
-            
-            // Use command interface to add node
-            document.getElementById('commandInput').value = `add node ${nodeName}`;
-            sendCommand();
-        }
-        
-        // ============================================
-        // SOURCE TRAY
-        // ============================================
-        
-        function renderSourceTray() {
-            const tray = document.getElementById('sourceTray');
-            const sources = state.projectSources.filter(s => s.projectId === state.activeProjectId);
-            
-            if (sources.length === 0) {
-                tray.innerHTML = '<p class="empty-state">No sources</p>';
-                return;
-            }
-            
-            tray.innerHTML = sources.map(source => `
-                <div class="source-tray-item" data-id="${source.id}">
-                    <span class="source-icon">📄</span>
-                    <span class="source-name">${source.name}</span>
-                    <button class="source-link-btn" data-id="${source.id}" title="Link to library">
-                        ⛓
+
+    <!-- ============ BOTTOM COMMAND BAR ============ -->
+    <div class="bottom-bar">
+        <div class="bottom-bar-header">
+            <h2>&#x2328; Command Interface</h2>
+        </div>
+        <div class="bottom-bar-body">
+            <!-- Command Input -->
+            <div class="command-input-area">
+                <div class="command-input-wrapper">
+                    <input type="text" id="commandInput" 
+                           placeholder='Type a command... (e.g. "add node Machine Learning", "search neural networks")'
+                           onkeydown="if(event.key==='Enter')sendCommand()">
+                    <button class="command-send-btn" id="sendBtn" onclick="sendCommand()">
+                        &#x27A4; Send
                     </button>
                 </div>
-            `).join('');
-            
-            tray.querySelectorAll('.source-tray-item').forEach(item => {
-                item.addEventListener('click', () => showFragmentWindow(item.dataset.id));
-            });
-            
-            tray.querySelectorAll('.source-link-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    await requestSourceLinkApproval(btn.dataset.id);
-                });
-            });
-        }
-        
-        async function requestSourceLinkApproval(sourceId) {
-            try {
-                await fetch(`${API_BASE}/api/approvals`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        type: 'source_link',
-                        context: 'sourceTray',
-                        data: { sourceId }
-                    })
-                });
-                addMessage('jarvis', 'Source link approval requested. You can approve it in the approval panel.');
-            } catch (error) {
-                console.error('Failed to request approval:', error);
-            }
-        }
-        
-        // ============================================
-        // FRAGMENT WINDOW
-        // ============================================
-        
-        async function showFragmentWindow(sourceId) {
-            const source = state.projectSources.find(s => s.id === sourceId);
-            if (!source) return;
-            
-            currentFragment = source;
-            
-            document.getElementById('fragmentTitle').textContent = source.name;
-            document.getElementById('fragmentSource').textContent = source.path || '';
-            
-            // If it's a PDF, show PDF viewer
-            if (source.path && source.path.endsWith('.pdf')) {
-                const pdfUrl = `${API_BASE}/api/files/${source.path}`;
-                document.getElementById('pdfFrame').src = pdfUrl;
-                document.getElementById('pdfViewer').classList.remove('hidden');
-            } else {
-                document.getElementById('pdfViewer').classList.add('hidden');
-            }
-            
-            // Show fragments for this source
-            const fragments = state.fragments.filter(f => f.sourceId === sourceId);
-            const fragmentText = document.getElementById('fragmentText');
-            
-            if (fragments.length > 0) {
-                fragmentText.innerHTML = fragments.map(f => `
-                    <div class="fragment-passage">
-                        <p>${f.text || 'No text available'}</p>
-                        ${f.pageStart ? `<span class="page-ref">Pages ${f.pageStart}-${f.pageEnd || f.pageStart}</span>` : ''}
-                    </div>
-                `).join('');
-            } else {
-                fragmentText.innerHTML = '<p class="empty-state">No fragments yet</p>';
-            }
-            
-            document.getElementById('fragmentOverlay').classList.remove('hidden');
-        }
-        
-        function closeFragment() {
-            document.getElementById('fragmentOverlay').classList.add('hidden');
-            document.getElementById('pdfFrame').src = '';
-            currentFragment = null;
-        }
-        
-        function navigatePage(direction) {
-            // Implement page navigation
-            addMessage('jarvis', `Navigating to ${direction > 0 ? 'next' : 'previous'} page`);
-        }
-        
-        async function handleFragmentAction(action) {
-            if (!currentFragment) return;
-            
-            switch (action) {
-                case 'quote':
-                    addMessage('jarvis', 'Quote added to workspace');
-                    break;
-                case 'open-source':
-                    showFragmentWindow(currentFragment.id);
-                    break;
-                case 'ask-jarvis':
-                    const question = prompt('Ask Jarvis about this fragment:');
-                    if (question) {
-                        document.getElementById('commandInput').value = question;
-                        sendCommand();
-                    }
-                    break;
-                case 'save-thought':
-                    const title = prompt('Enter thought state title:');
-                    if (title) {
-                        await fetch(`${API_BASE}/api/thought-states`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                title,
-                                type: 'fragment',
-                                content: { sourceId: currentFragment.id }
-                            })
-                        });
-                        await loadProjectData();
-                        renderThoughtStates();
-                        addMessage('jarvis', `Thought state "${title}" saved`);
-                    }
-                    break;
-            }
-        }
-        
-        // ============================================
-        // PIVOTS
-        // ============================================
-        
-        function renderPivotsList() {
-            const list = document.getElementById('pivotsList');
-            
-            if (state.pivots.length === 0) {
-                list.innerHTML = '<p class="empty-state">No pivots</p>';
-                return;
-            }
-            
-            list.innerHTML = state.pivots.map(pivot => `
-                <div class="pivot-item" data-id="${pivot.id}">
-                    <div class="pivot-info">
-                        <span class="pivot-name">${pivot.name}</span>
-                        <span class="pivot-status ${pivot.status}">${pivot.status}</span>
-                    </div>
-                    <div class="pivot-actions">
-                        <button class="pivot-archive" data-id="${pivot.id}">Archive</button>
-                        <button class="pivot-promote" data-id="${pivot.id}">Promote</button>
+                <div id="lastResponse" style="font-size:12px;color:var(--text-tertiary);flex:1;overflow-y:auto;padding-right:4px;">
+                </div>
+            </div>
+            <!-- Command History -->
+            <div class="command-history">
+                <div class="command-history-header">Command History</div>
+                <div class="command-history-list" id="commandHistoryList">
+                    <div class="empty-state" id="historyEmpty" style="padding:20px;">
+                        <div class="empty-icon">&#x1F4CB;</div>
+                        <h3>History empty</h3>
+                        <p>Your commands will appear here</p>
                     </div>
                 </div>
-            `).join('');
-            
-            list.querySelectorAll('.pivot-archive').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    await archivePivot(btn.dataset.id);
-                });
-            });
-            
-            list.querySelectorAll('.pivot-promote').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    await promotePivot(btn.dataset.id);
-                });
-            });
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ============================================
+// Jarvis Research OS - Main Application
+// ============================================
+
+// --- Global State ---
+const App = {
+    state: null,
+    nodes: [],
+    edges: [],
+    projects: [],
+    pivots: [],
+    sources: [],
+    proposals: [],
+    commandHistory: [],
+    activeProjectId: null,
+    selectedNodeId: null,
+    canvasMode: 'select', // select | pan
+
+    // Canvas state
+    canvas: null,
+    ctx: null,
+    canvasWidth: 0,
+    canvasHeight: 0,
+    dpr: window.devicePixelRatio || 1,
+
+    // Camera / viewport
+    camera: { x: 0, y: 0, zoom: 1 },
+
+    // Interaction
+    draggingNode: null,
+    dragOffset: { x: 0, y: 0 },
+    isPanning: false,
+    panStart: { x: 0, y: 0 },
+    cameraStart: { x: 0, y: 0 },
+    hoveredNode: null,
+    mouseX: 0,
+    mouseY: 0,
+
+    // Node layout positions
+    nodePositions: {},
+
+    // Animation
+    animFrame: null,
+};
+
+// --- Utility Functions ---
+const API = (path, opts = {}) => {
+    const base = window.location.origin;
+    const url = path.startsWith('http') ? path : `${base}${path}`;
+    const defaults = { headers: { 'Content-Type': 'application/json' }, ...opts };
+    if (opts.body && typeof opts.body === 'object') {
+        defaults.body = JSON.stringify(opts.body);
+    }
+    defaults.method = opts.method || (opts.body ? 'POST' : 'GET');
+    return fetch(url, defaults).then(r => r.json());
+};
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('fadeout');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// --- Initialization ---
+async function init() {
+    try {
+        // Check health
+        const health = await API('/api/health');
+        document.getElementById('statusText').textContent = 
+            `Online | ${health.nodeCount || 0} nodes | ${health.projectCount || 0} projects`;
+        document.getElementById('statusDot').style.background = 'var(--green)';
+    } catch (e) {
+        document.getElementById('statusText').textContent = 'Offline';
+        document.getElementById('statusDot').style.background = 'var(--red)';
+        console.error('Failed to connect to backend:', e);
+    }
+
+    // Load full state
+    try {
+        App.state = await API('/api/state');
+        syncState();
+    } catch (e) {
+        console.error('Failed to load state:', e);
+    }
+
+    // Init canvas
+    initCanvas();
+    drawGraph();
+    startRenderLoop();
+
+    // Load command history
+    loadCommandHistory();
+
+    // Render all UI
+    renderAll();
+
+    // Set up resize handler
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+        drawGraph();
+    });
+}
+
+function syncState() {
+    if (!App.state) return;
+    App.nodes = App.state.nodes || [];
+    App.edges = App.state.edges || [];
+    App.projects = App.state.projects || [];
+    App.pivots = App.state.pivots || [];
+    App.sources = App.state.projectSources || [];
+    App.proposals = App.state.proposals || [];
+    App.commandHistory = App.state.commandHistory || [];
+    App.activeProjectId = App.state.activeProjectId;
+}
+
+function renderAll() {
+    renderProjects();
+    renderSources();
+    renderPivots();
+    renderProposals();
+    renderCommandHistory();
+    updateCanvasStats();
+}
+
+// --- Projects ---
+function renderProjects() {
+    const container = document.getElementById('projectsList');
+    document.getElementById('projectCount').textContent = App.projects.length;
+
+    if (App.projects.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="padding:16px;">
+                <div class="empty-icon">&#x1F4C1;</div>
+                <h3>No projects</h3>
+                <p>Create a project to organize your research</p>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = App.projects.map(p => `
+        <div class="project-item ${p.id === App.activeProjectId ? 'active' : ''}" 
+             onclick="setActiveProject('${p.id}')">
+            <div class="project-dot"></div>
+            <div class="project-info">
+                <div class="project-name">${escapeHtml(p.name)}</div>
+                <div class="project-meta">${new Date(p.createdAt).toLocaleDateString()}</div>
+            </div>
+            <button class="project-delete" onclick="event.stopPropagation(); deleteProject('${p.id}')" 
+                    title="Delete project">&#x2715;</button>
+        </div>
+    `).join('');
+}
+
+function showNewProjectInput() {
+    const row = document.getElementById('newProjectRow');
+    row.classList.toggle('hidden');
+    if (!row.classList.contains('hidden')) {
+        document.getElementById('newProjectName').focus();
+    }
+}
+
+async function createProject() {
+    const input = document.getElementById('newProjectName');
+    const name = input.value.trim();
+    if (!name) return;
+
+    try {
+        await API('/api/projects', { method: 'POST', body: { name } });
+        input.value = '';
+        document.getElementById('newProjectRow').classList.add('hidden');
+        App.state = await API('/api/state');
+        syncState();
+        renderAll();
+        showToast(`Project "${name}" created`, 'success');
+    } catch (e) {
+        showToast('Failed to create project', 'error');
+    }
+}
+
+async function setActiveProject(id) {
+    try {
+        await API('/api/projects/active', { method: 'POST', body: { projectId: id } });
+        App.activeProjectId = id;
+        renderProjects();
+        showToast('Project activated', 'success');
+    } catch (e) {
+        showToast('Failed to switch project', 'error');
+    }
+}
+
+async function deleteProject(id) {
+    try {
+        await API(`/api/projects/${id}`, { method: 'DELETE' });
+        App.state = await API('/api/state');
+        syncState();
+        renderAll();
+        showToast('Project deleted', 'success');
+    } catch (e) {
+        showToast('Failed to delete project', 'error');
+    }
+}
+
+// --- Sources ---
+function renderSources() {
+    const container = document.getElementById('sourcesList');
+    const projectSources = App.activeProjectId 
+        ? App.sources.filter(s => s.projectId === App.activeProjectId)
+        : App.sources;
+    document.getElementById('sourceCount').textContent = projectSources.length;
+
+    if (projectSources.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="padding:16px;">
+                <div class="empty-icon">&#x1F4C4;</div>
+                <h3>No sources</h3>
+                <p>Upload files to build your research library</p>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = projectSources.map(s => `
+        <div class="source-item">
+            <div class="source-icon">&#x1F4C4;</div>
+            <div class="source-info">
+                <div class="source-name">${escapeHtml(s.name)}</div>
+                <div class="source-meta">${s.type || 'file'}</div>
+            </div>
+            ${s.chunks ? `<span class="source-chunks">${s.chunks} chunks</span>` : ''}
+            <button class="sidebar-icon-btn" onclick="deleteSource('${s.id}')" title="Remove">&#x2715;</button>
+        </div>
+    `).join('');
+}
+
+async function deleteSource(id) {
+    try {
+        await API(`/api/sources/${id}`, { method: 'DELETE' });
+        App.state = await API('/api/state');
+        syncState();
+        renderAll();
+        showToast('Source removed', 'success');
+    } catch (e) {
+        showToast('Failed to remove source', 'error');
+    }
+}
+
+// --- Pivots ---
+function renderPivots() {
+    const container = document.getElementById('pivotsList');
+    document.getElementById('pivotCount').textContent = App.pivots.length;
+
+    if (App.pivots.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="padding:16px;">
+                <div class="empty-icon">&#x1F527;</div>
+                <h3>No pivots</h3>
+                <p>Create pivots to track research directions</p>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = App.pivots.map(p => `
+        <div class="pivot-item">
+            <span class="pivot-badge ${p.status}">${p.status}</span>
+            <span class="pivot-name">${escapeHtml(p.name)}</span>
+            <button class="sidebar-icon-btn" onclick="archivePivot('${p.id}')" title="Archive">&#x1F4BE;</button>
+        </div>
+    `).join('');
+}
+
+async function archivePivot(id) {
+    try {
+        await API(`/api/pivots/${id}/archive`, { method: 'POST' });
+        App.state = await API('/api/state');
+        syncState();
+        renderAll();
+        showToast('Pivot archived', 'success');
+    } catch (e) {
+        showToast('Failed to archive pivot', 'error');
+    }
+}
+
+// --- Section Toggle ---
+function toggleSection(section) {
+    const bodies = {
+        projects: 'projectsList',
+        sources: 'sourcesList',
+        pivots: 'pivotsList',
+    };
+    const toggles = {
+        projects: 'projectsToggle',
+        sources: 'sourcesToggle',
+        pivots: 'pivotsToggle',
+    };
+    const body = document.getElementById(bodies[section]);
+    const toggle = document.getElementById(toggles[section]);
+    body.classList.toggle('collapsed');
+    toggle.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
+}
+
+// --- File Upload ---
+function handleDragOver(e) {
+    e.preventDefault();
+    document.getElementById('uploadZone').classList.add('dragover');
+}
+
+function handleDragLeave(e) {
+    e.preventDefault();
+    document.getElementById('uploadZone').classList.remove('dragover');
+}
+
+async function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('uploadZone').classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) await uploadFile(files[0]);
+}
+
+function handleFileSelect(e) {
+    const files = e.target.files;
+    if (files.length > 0) uploadFile(files[0]);
+    e.target.value = '';
+}
+
+async function uploadFile(file) {
+    const projectId = App.activeProjectId || 'default';
+    const progress = document.getElementById('uploadProgress');
+    const progressText = document.getElementById('uploadProgressText');
+    const chunksEl = document.getElementById('uploadChunks');
+
+    progress.classList.add('active');
+    progressText.textContent = `Uploading ${file.name}...`;
+    chunksEl.textContent = '';
+
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('projectId', projectId);
+
+        progressText.textContent = `Processing ${file.name}...`;
+
+        const result = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+        }).then(r => r.json());
+
+        if (result.error) {
+            showToast(result.error, 'error');
+        } else {
+            const chunks = result.processing?.chunks_processed || 0;
+            chunksEl.textContent = chunks > 0 ? `${chunks} chunks` : 'Indexed';
+            showToast(`"${file.name}" uploaded successfully`, 'success');
+
+            App.state = await API('/api/state');
+            syncState();
+            renderAll();
         }
-        
-        async function createPivot() {
-            const name = prompt('Enter pivot name:', 'New Research Question');
-            if (!name) return;
+    } catch (e) {
+        showToast('Upload failed', 'error');
+    } finally {
+        setTimeout(() => progress.classList.remove('active'), 2000);
+    }
+}
+
+// --- Command Interface ---
+async function sendCommand() {
+    const input = document.getElementById('commandInput');
+    const command = input.value.trim();
+    if (!command) return;
+
+    const sendBtn = document.getElementById('sendBtn');
+    sendBtn.disabled = true;
+    input.value = '';
+
+    try {
+        const proposal = await API('/api/command', {
+            method: 'POST',
+            body: {
+                command: command,
+                projectId: App.activeProjectId,
+            },
+        });
+
+        // Show quick response in bottom bar
+        showLastResponse(proposal);
+
+        // Refresh state
+        App.state = await API('/api/state');
+        syncState();
+        renderAll();
+
+        // Auto-select proposal in right panel
+        switchRightTab('proposals');
+        selectProposal(proposal.id);
+
+    } catch (e) {
+        showToast('Command failed', 'error');
+    } finally {
+        sendBtn.disabled = false;
+    }
+}
+
+function showLastResponse(proposal) {
+    const el = document.getElementById('lastResponse');
+    const dr = proposal.dialecticalResponse || {};
+    const source = dr.source || 'static';
+    el.innerHTML = `
+        <div style="margin-bottom:6px;">
+            <span class="text-accent text-xs font-mono">[${proposal.type.toUpperCase()}]</span>
+            <span style="color:var(--text-secondary);"> ${escapeHtml(proposal.command)}</span>
+        </div>
+        <div style="color:var(--text-secondary);line-height:1.5;font-size:12px;">
+            ${escapeHtml((dr.analysis || '').substring(0, 200))}${(dr.analysis || '').length > 200 ? '...' : ''}
+        </div>
+        <div class="text-xs text-muted" style="margin-top:4px;">via ${source}</div>
+    `;
+}
+
+// --- Command History ---
+async function loadCommandHistory() {
+    try {
+        App.commandHistory = await API('/api/command-history');
+        renderCommandHistory();
+    } catch (e) {
+        console.error('Failed to load command history:', e);
+    }
+}
+
+function renderCommandHistory() {
+    const container = document.getElementById('commandHistoryList');
+    const emptyEl = document.getElementById('historyEmpty');
+
+    if (App.commandHistory.length === 0) {
+        emptyEl.style.display = '';
+        return;
+    }
+    emptyEl.style.display = 'none';
+
+    container.innerHTML = App.commandHistory.slice().reverse().map(h => `
+        <div class="history-item" onclick="rerunCommand('${h.id}')">
+            <span class="history-text">${escapeHtml(h.text)}</span>
+            <span class="history-intent">${h.intent || 'cmd'}</span>
+            <span class="history-rerun" title="Rerun">&#x21BB;</span>
+        </div>
+    `).join('');
+}
+
+async function rerunCommand(historyId) {
+    try {
+        const proposal = await API(`/api/command-history/${historyId}/rerun`, { method: 'POST' });
+        showLastResponse(proposal);
+        App.state = await API('/api/state');
+        syncState();
+        renderAll();
+        switchRightTab('proposals');
+        showToast('Command rerun', 'info');
+    } catch (e) {
+        showToast('Rerun failed', 'error');
+    }
+}
+
+// --- Proposals ---
+function renderProposals() {
+    const container = document.getElementById('proposalsList');
+    const emptyEl = document.getElementById('proposalsEmpty');
+
+    if (App.proposals.length === 0) {
+        emptyEl.style.display = '';
+        container.innerHTML = '';
+        return;
+    }
+    emptyEl.style.display = 'none';
+
+    container.innerHTML = App.proposals.slice().reverse().map(p => {
+        const dr = p.dialecticalResponse || {};
+        const pressurePoints = dr.pressure_points || [];
+        const suggestions = dr.suggestions || [];
+
+        return `
+        <div class="proposal-card ${p.status} fade-in" id="proposal-${p.id}">
+            <div class="proposal-header">
+                <span class="proposal-type">${escapeHtml(p.type.replace(/_/g, ' '))}</span>
+                <span class="proposal-status ${p.status}">${p.status}</span>
+            </div>
+            <div class="proposal-command">${escapeHtml(p.command)}</div>
+            ${p.rationale ? `<div style="font-size:12px;color:var(--text-tertiary);margin-bottom:8px;">${escapeHtml(p.rationale)}</div>` : ''}
             
-            try {
-                const response = await fetch(`${API_BASE}/api/pivots`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name })
-                });
-                const pivot = await response.json();
-                state.pivots.push(pivot);
-                renderPivotsList();
-                addMessage('jarvis', `Created new pivot: ${name}`);
-            } catch (error) {
-                console.error('Failed to create pivot:', error);
-            }
-        }
-        
-        async function archivePivot(pivotId) {
-            try {
-                await fetch(`${API_BASE}/api/pivots/${pivotId}/archive`, { method: 'POST' });
-                const pivot = state.pivots.find(p => p.id === pivotId);
-                if (pivot) pivot.status = 'archived';
-                renderPivotsList();
-                addMessage('jarvis', 'Pivot archived');
-            } catch (error) {
-                console.error('Failed to archive pivot:', error);
-            }
-        }
-        
-        async function promotePivot(pivotId) {
-            try {
-                await fetch(`${API_BASE}/api/pivots/${pivotId}/promote`, { method: 'POST' });
-                const pivot = state.pivots.find(p => p.id === pivotId);
-                if (pivot) pivot.status = 'promoted';
-                renderPivotsList();
-                addMessage('jarvis', 'Pivot promoted to main research thread');
-            } catch (error) {
-                console.error('Failed to promote pivot:', error);
-            }
-        }
-        
-        function showPivotCard(pivotId) {
-            const pivot = state.pivots.find(p => p.id === pivotId);
-            if (pivot) {
-                addMessage('jarvis', `Pivot: ${pivot.name} (${pivot.status})`);
-            }
-        }
-        
-        // ============================================
-        // THOUGHT STATES
-        // ============================================
-        
-        function renderThoughtStates() {
-            const list = document.getElementById('thoughtStatesList');
-            
-            if (state.thoughtStates.length === 0) {
-                list.innerHTML = '<p class="empty-state">No thought states</p>';
-                return;
-            }
-            
-            list.innerHTML = state.thoughtStates.map(thought => `
-                <div class="thought-state-item" data-id="${thought.id}">
-                    <span class="thought-title">${thought.title}</span>
-                    <span class="thought-type">${thought.type}</span>
+            <div class="dialectical-response">
+                ${dr.analysis ? `
+                <div class="dialectical-analysis">${escapeHtml(dr.analysis)}</div>
+                ` : ''}
+
+                ${pressurePoints.length > 0 ? `
+                <div class="dialectical-section">
+                    <h4 class="pressure"><span class="icon">&#x26A0;</span> Pressure Points</h4>
+                    <ul class="dialectical-list">
+                        ${pressurePoints.map(pp => `<li class="pressure">${escapeHtml(pp)}</li>`).join('')}
+                    </ul>
                 </div>
-            `).join('');
-            
-            list.querySelectorAll('.thought-state-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    addMessage('jarvis', `Viewing thought state: ${item.querySelector('.thought-title').textContent}`);
-                });
-            });
+                ` : ''}
+
+                ${suggestions.length > 0 ? `
+                <div class="dialectical-section">
+                    <h4 class="suggestions"><span class="icon">&#x1F4A1;</span> Suggestions</h4>
+                    <ul class="dialectical-list">
+                        ${suggestions.map(s => `<li class="suggestion">${escapeHtml(s)}</li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+
+                ${dr.source ? `
+                <div class="dialectical-section">
+                    <h4 class="source"><span class="icon">&#x1F310;</span> Source: ${escapeHtml(dr.source)}</h4>
+                </div>
+                ` : ''}
+            </div>
+
+            ${p.status === 'pending' ? `
+            <div class="proposal-actions">
+                <button class="btn btn-approve" onclick="approveProposal('${p.id}')">
+                    &#x2713; Approve
+                </button>
+                <button class="btn btn-reject" onclick="rejectProposal('${p.id}')">
+                    &#x2717; Reject
+                </button>
+            </div>
+            ` : ''}
+        </div>`;
+    }).join('');
+}
+
+function selectProposal(id) {
+    const el = document.getElementById(`proposal-${id}`);
+    if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        el.style.boxShadow = 'var(--shadow-glow)';
+        setTimeout(() => { el.style.boxShadow = ''; }, 2000);
+    }
+}
+
+async function approveProposal(id) {
+    try {
+        await API(`/api/proposals/${id}/approve`, { method: 'POST' });
+        App.state = await API('/api/state');
+        syncState();
+        renderAll();
+        drawGraph();
+        showToast('Proposal approved and committed', 'success');
+    } catch (e) {
+        showToast('Failed to approve', 'error');
+    }
+}
+
+async function rejectProposal(id) {
+    try {
+        await API(`/api/proposals/${id}/reject`, { method: 'POST' });
+        App.state = await API('/api/state');
+        syncState();
+        renderAll();
+        showToast('Proposal rejected', 'info');
+    } catch (e) {
+        showToast('Failed to reject', 'error');
+    }
+}
+
+// --- Right Panel Tabs ---
+function switchRightTab(tab) {
+    document.getElementById('proposalsView').classList.toggle('hidden', tab !== 'proposals');
+    document.getElementById('nodeView').classList.toggle('hidden', tab !== 'node');
+    document.getElementById('searchView').classList.toggle('hidden', tab !== 'search');
+
+    document.getElementById('tabProposals').classList.toggle('active', tab === 'proposals');
+    document.getElementById('tabNode').classList.toggle('active', tab === 'node');
+    document.getElementById('tabSearch').classList.toggle('active', tab === 'search');
+}
+
+// --- Search ---
+async function performSearch() {
+    const input = document.getElementById('searchInput');
+    const query = input.value.trim();
+    if (!query) return;
+
+    const container = document.getElementById('searchResults');
+    container.innerHTML = '<div class="loading-overlay active" style="position:relative;border-radius:var(--radius-md);min-height:100px;"><div class="loading-spinner"></div></div>';
+
+    try {
+        const result = await API('/api/search', {
+            method: 'POST',
+            body: { query, projectId: App.activeProjectId },
+        });
+
+        if (result.error || !result.results || result.results.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">&#x1F50D;</div>
+                    <h3>No results found</h3>
+                    <p>Try a different query or upload more sources</p>
+                </div>`;
+            return;
         }
-        
-        // ============================================
-        // UTILITIES
-        // ============================================
-        
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+
+        container.innerHTML = result.results.map(r => `
+            <div class="search-result">
+                <div class="search-result-header">
+                    <span class="search-result-source">${escapeHtml(r.source || 'Unknown')}</span>
+                    ${r.score ? `<span class="search-result-score">${(r.score * 100).toFixed(0)}%</span>` : ''}
+                </div>
+                <div class="search-result-text">${escapeHtml(r.text || r.content || JSON.stringify(r).substring(0, 300))}</div>
+            </div>
+        `).join('');
+    } catch (e) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">&#x26A0;</div>
+                <h3>Search failed</h3>
+                <p>${escapeHtml(e.message || 'An error occurred')}</p>
+            </div>`;
+    }
+}
+
+// --- Canvas / Graph ---
+function initCanvas() {
+    App.canvas = document.getElementById('graphCanvas');
+    App.ctx = App.canvas.getContext('2d');
+    resizeCanvas();
+
+    // Set up initial node positions in a circle
+    layoutNodes();
+
+    // Mouse events
+    App.canvas.addEventListener('mousedown', onCanvasMouseDown);
+    App.canvas.addEventListener('mousemove', onCanvasMouseMove);
+    App.canvas.addEventListener('mouseup', onCanvasMouseUp);
+    App.canvas.addEventListener('mouseleave', onCanvasMouseLeave);
+    App.canvas.addEventListener('wheel', onCanvasWheel, { passive: false });
+
+    // Touch events for mobile
+    App.canvas.addEventListener('touchstart', onCanvasTouchStart, { passive: false });
+    App.canvas.addEventListener('touchmove', onCanvasTouchMove, { passive: false });
+    App.canvas.addEventListener('touchend', onCanvasTouchEnd);
+}
+
+function resizeCanvas() {
+    const container = document.getElementById('canvasContainer');
+    const rect = container.getBoundingClientRect();
+    App.canvasWidth = rect.width;
+    App.canvasHeight = rect.height;
+    App.canvas.width = App.canvasWidth * App.dpr;
+    App.canvas.height = App.canvasHeight * App.dpr;
+    App.canvas.style.width = App.canvasWidth + 'px';
+    App.canvas.style.height = App.canvasHeight + 'px';
+    App.ctx.setTransform(App.dpr, 0, 0, App.dpr, 0, 0);
+}
+
+function layoutNodes() {
+    const cx = App.canvasWidth / 2;
+    const cy = App.canvasHeight / 2;
+    const count = App.nodes.length;
+    const radius = Math.min(cx, cy) * 0.5;
+
+    App.nodes.forEach((node, i) => {
+        // Keep existing positions if available
+        if (!App.nodePositions[node.id]) {
+            if (count === 1) {
+                App.nodePositions[node.id] = { x: cx, y: cy };
+            } else {
+                const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
+                App.nodePositions[node.id] = {
+                    x: cx + Math.cos(angle) * radius,
+                    y: cy + Math.sin(angle) * radius,
+                };
+            }
         }
-        
-        function formatDate(dateStr) {
-            if (!dateStr) return '';
-            const date = new Date(dateStr);
-            return date.toLocaleDateString();
+    });
+}
+
+function updateCanvasStats() {
+    document.getElementById('nodeCount').textContent = App.nodes.length;
+    document.getElementById('edgeCount').textContent = App.edges.length;
+}
+
+function screenToWorld(sx, sy) {
+    return {
+        x: (sx - App.camera.x) / App.camera.zoom,
+        y: (sy - App.camera.y) / App.camera.zoom,
+    };
+}
+
+function worldToScreen(wx, wy) {
+    return {
+        x: wx * App.camera.zoom + App.camera.x,
+        y: wy * App.camera.zoom + App.camera.y,
+    };
+}
+
+function getNodeAt(sx, sy) {
+    const world = screenToWorld(sx, sy);
+    const nodeRadius = 30;
+
+    for (let i = App.nodes.length - 1; i >= 0; i--) {
+        const node = App.nodes[i];
+        const pos = App.nodePositions[node.id];
+        if (!pos) continue;
+
+        const dx = world.x - pos.x;
+        const dy = world.y - pos.y;
+        if (dx * dx + dy * dy <= nodeRadius * nodeRadius) {
+            return node;
         }
-        
-        function render() {
-            // Initial render - always show project launcher first
-            showScreen('projectLauncher');
+    }
+    return null;
+}
+
+// --- Canvas Drawing ---
+function drawGraph() {
+    const ctx = App.ctx;
+    const w = App.canvasWidth;
+    const h = App.canvasHeight;
+
+    // Clear
+    ctx.fillStyle = '#0a0a0f';
+    ctx.fillRect(0, 0, w, h);
+
+    // Draw grid
+    drawGrid(ctx, w, h);
+
+    ctx.save();
+    ctx.translate(App.camera.x, App.camera.y);
+    ctx.scale(App.camera.zoom, App.camera.zoom);
+
+    // Draw edges
+    drawEdges(ctx);
+
+    // Draw nodes
+    drawNodes(ctx);
+
+    ctx.restore();
+}
+
+function drawGrid(ctx, w, h) {
+    const spacing = 40 * App.camera.zoom;
+    const offsetX = App.camera.x % spacing;
+    const offsetY = App.camera.y % spacing;
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = offsetX; x < w; x += spacing) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+    }
+    for (let y = offsetY; y < h; y += spacing) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+    }
+    ctx.stroke();
+}
+
+function drawEdges(ctx) {
+    App.edges.forEach(edge => {
+        const fromPos = App.nodePositions[edge.source || edge.from];
+        const toPos = App.nodePositions[edge.target || edge.to];
+        if (!fromPos || !toPos) return;
+
+        const weight = edge.weight || 0.5;
+        const type = edge.type || 'related';
+
+        ctx.beginPath();
+        ctx.moveTo(fromPos.x, fromPos.y);
+        ctx.lineTo(toPos.x, toPos.y);
+
+        if (type === 'semantic') {
+            ctx.strokeStyle = `rgba(124, 92, 252, ${0.15 + weight * 0.35})`;
+            ctx.lineWidth = 1.5 + weight;
+        } else {
+            ctx.strokeStyle = `rgba(0, 212, 170, ${0.08 + weight * 0.2})`;
+            ctx.lineWidth = 1 + weight * 0.5;
         }
-    </script>
+
+        ctx.stroke();
+    });
+}
+
+function drawNodes(ctx) {
+    App.nodes.forEach(node => {
+        const pos = App.nodePositions[node.id];
+        if (!pos) return;
+
+        const isSelected = App.selectedNodeId === node.id;
+        const isHovered = App.hoveredNode && App.hoveredNode.id === node.id;
+        const status = node.status || 'concept';
+
+        let color, glowColor;
+        switch (status) {
+            case 'active':
+                color = '#22c55e';
+                glowColor = 'rgba(34, 197, 94, 0.3)';
+                break;
+            case 'archived':
+                color = '#55556a';
+                glowColor = 'rgba(85, 85, 106, 0.2)';
+                break;
+            default:
+                color = '#7c5cfc';
+                glowColor = 'rgba(124, 92, 252, 0.3)';
+        }
+
+        const radius = 24;
+        const fontSize = 10;
+
+        // Glow effect
+        if (isSelected || isHovered) {
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, radius + 8, 0, Math.PI * 2);
+            ctx.fillStyle = isSelected ? 'rgba(124, 92, 252, 0.12)' : 'rgba(255, 255, 255, 0.04)';
+            ctx.fill();
+        }
+
+        // Outer glow
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, radius + 3, 0, Math.PI * 2);
+        ctx.fillStyle = glowColor;
+        ctx.fill();
+
+        // Main circle
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        // Inner highlight
+        const gradient = ctx.createRadialGradient(pos.x - 5, pos.y - 5, 0, pos.x, pos.y, radius);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        // Border
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = isSelected ? '#fff' : 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = isSelected ? 2 : 1;
+        ctx.stroke();
+
+        // Initials / Icon
+        const initials = node.name
+            ? node.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
+            : '?';
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold 12px ${getComputedStyle(document.body).getPropertyValue('--font-sans').trim() || 'Inter, sans-serif'}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(initials, pos.x, pos.y);
+
+        // Label below
+        ctx.fillStyle = isSelected ? '#fff' : 'rgba(232, 232, 240, 0.8)';
+        ctx.font = `500 ${fontSize}px ${getComputedStyle(document.body).getPropertyValue('--font-sans').trim() || 'Inter, sans-serif'}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+
+        // Word wrap label
+        const maxWidth = 80;
+        const words = (node.name || '').split(' ');
+        let lines = [];
+        let currentLine = '';
+        words.forEach(word => {
+            const testLine = currentLine ? currentLine + ' ' + word : word;
+            if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+                lines.push(currentLine);
+                currentLine = word;
+            } else {
+                currentLine = testLine;
+            }
+        });
+        if (currentLine) lines.push(currentLine);
+        if (lines.length > 2) lines = lines.slice(0, 2);
+
+        lines.forEach((line, i) => {
+            ctx.fillText(line, pos.x, pos.y + radius + 6 + i * (fontSize + 3));
+        });
+    });
+}
+
+function startRenderLoop() {
+    function loop() {
+        drawGraph();
+        App.animFrame = requestAnimationFrame(loop);
+    }
+    loop();
+}
+
+// --- Canvas Interaction ---
+function onCanvasMouseDown(e) {
+    const rect = App.canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left;
+    const sy = e.clientY - rect.top;
+    const node = getNodeAt(sx, sy);
+
+    if (App.canvasMode === 'pan' || (e.button === 1) || (e.button === 0 && e.shiftKey)) {
+        // Start panning
+        App.isPanning = true;
+        App.panStart = { x: e.clientX, y: e.clientY };
+        App.cameraStart = { x: App.camera.x, y: App.camera.y };
+        App.canvas.style.cursor = 'grabbing';
+        return;
+    }
+
+    if (node) {
+        // Start dragging
+        App.draggingNode = node;
+        const pos = App.nodePositions[node.id];
+        const world = screenToWorld(sx, sy);
+        App.dragOffset = { x: world.x - pos.x, y: world.y - pos.y };
+        App.canvas.style.cursor = 'grabbing';
+    } else {
+        // Deselect
+        App.selectedNodeId = null;
+        renderNodeDetail();
+        // Start panning if no node hit
+        App.isPanning = true;
+        App.panStart = { x: e.clientX, y: e.clientY };
+        App.cameraStart = { x: App.camera.x, y: App.camera.y };
+        App.canvas.style.cursor = 'grabbing';
+    }
+}
+
+function onCanvasMouseMove(e) {
+    const rect = App.canvas.getBoundingClientRect();
+    const sx = e.clientX - rect.left;
+    const sy = e.clientY - rect.top;
+    App.mouseX = sx;
+    App.mouseY = sy;
+
+    if (App.isPanning) {
+        const dx = e.clientX - App.panStart.x;
+        const dy = e.clientY - App.panStart.y;
+        App.camera.x = App.cameraStart.x + dx;
+        App.camera.y = App.cameraStart.y + dy;
+        return;
+    }
+
+    if (App.draggingNode) {
+        const world = screenToWorld(sx, sy);
+        App.nodePositions[App.draggingNode.id] = {
+            x: world.x - App.dragOffset.x,
+            y: world.y - App.dragOffset.y,
+        };
+        return;
+    }
+
+    // Hover detection
+    const node = getNodeAt(sx, sy);
+    App.hoveredNode = node;
+
+    const tooltip = document.getElementById('canvasTooltip');
+    if (node) {
+        App.canvas.style.cursor = 'pointer';
+        tooltip.innerHTML = `<strong>${escapeHtml(node.name)}</strong><br><span class="text-xs text-muted">${node.id} · ${node.status}</span>`;
+        tooltip.style.left = (sx + 16) + 'px';
+        tooltip.style.top = (sy - 10) + 'px';
+        tooltip.classList.add('visible');
+    } else {
+        App.canvas.style.cursor = App.canvasMode === 'pan' ? 'grab' : 'default';
+        tooltip.classList.remove('visible');
+    }
+}
+
+function onCanvasMouseUp(e) {
+    if (App.draggingNode) {
+        // Click on node (select it)
+        const rect = App.canvas.getBoundingClientRect();
+        const sx = e.clientX - rect.left;
+        const sy = e.clientY - rect.top;
+        const node = getNodeAt(sx, sy);
+
+        if (node && node.id === App.draggingNode.id) {
+            App.selectedNodeId = node.id;
+            showNodeDetail(node);
+            switchRightTab('node');
+        }
+
+        App.draggingNode = null;
+        App.canvas.style.cursor = 'default';
+    }
+
+    if (App.isPanning) {
+        App.isPanning = false;
+        App.canvas.style.cursor = App.canvasMode === 'pan' ? 'grab' : 'default';
+    }
+}
+
+function onCanvasMouseLeave() {
+    App.hoveredNode = null;
+    App.draggingNode = null;
+    App.isPanning = false;
+    document.getElementById('canvasTooltip').classList.remove('visible');
+}
+
+function onCanvasWheel(e) {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    zoomAt(delta, e.clientX, e.clientY);
+}
+
+function zoomAt(factor, clientX, clientY) {
+    const rect = App.canvas.getBoundingClientRect();
+    const sx = clientX - rect.left;
+    const sy = clientY - rect.top;
+
+    const oldZoom = App.camera.zoom;
+    App.camera.zoom = Math.max(0.1, Math.min(5, App.camera.zoom * factor));
+
+    // Zoom towards mouse position
+    const zoomRatio = App.camera.zoom / oldZoom;
+    App.camera.x = sx - (sx - App.camera.x) * zoomRatio;
+    App.camera.y = sy - (sy - App.camera.y) * zoomRatio;
+}
+
+function zoomCanvas(factor) {
+    zoomAt(factor, App.canvasWidth / 2, App.canvasHeight / 2);
+}
+
+function fitGraph() {
+    if (App.nodes.length === 0) return;
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    App.nodes.forEach(node => {
+        const pos = App.nodePositions[node.id];
+        if (!pos) return;
+        minX = Math.min(minX, pos.x);
+        minY = Math.min(minY, pos.y);
+        maxX = Math.max(maxX, pos.x);
+        maxY = Math.max(maxY, pos.y);
+    });
+
+    const padding = 80;
+    const graphW = maxX - minX + padding * 2;
+    const graphH = maxY - minY + padding * 2;
+    const zoomX = App.canvasWidth / graphW;
+    const zoomY = App.canvasHeight / graphH;
+    App.camera.zoom = Math.min(zoomX, zoomY, 2);
+
+    const centerGraphX = (minX + maxX) / 2;
+    const centerGraphY = (minY + maxY) / 2;
+    App.camera.x = App.canvasWidth / 2 - centerGraphX * App.camera.zoom;
+    App.camera.y = App.canvasHeight / 2 - centerGraphY * App.camera.zoom;
+}
+
+// Touch support
+function onCanvasTouchStart(e) {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const rect = App.canvas.getBoundingClientRect();
+        const sx = touch.clientX - rect.left;
+        const sy = touch.clientY - rect.top;
+        const node = getNodeAt(sx, sy);
+
+        if (node) {
+            App.draggingNode = node;
+            const pos = App.nodePositions[node.id];
+            const world = screenToWorld(sx, sy);
+            App.dragOffset = { x: world.x - pos.x, y: world.y - pos.y };
+        } else {
+            App.isPanning = true;
+            App.panStart = { x: touch.clientX, y: touch.clientY };
+            App.cameraStart = { x: App.camera.x, y: App.camera.y };
+        }
+    }
+}
+
+function onCanvasTouchMove(e) {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const rect = App.canvas.getBoundingClientRect();
+        const sx = touch.clientX - rect.left;
+        const sy = touch.clientY - rect.top;
+
+        if (App.draggingNode) {
+            const world = screenToWorld(sx, sy);
+            App.nodePositions[App.draggingNode.id] = {
+                x: world.x - App.dragOffset.x,
+                y: world.y - App.dragOffset.y,
+            };
+        } else if (App.isPanning) {
+            const dx = touch.clientX - App.panStart.x;
+            const dy = touch.clientY - App.panStart.y;
+            App.camera.x = App.cameraStart.x + dx;
+            App.camera.y = App.cameraStart.y + dy;
+        }
+    }
+}
+
+function onCanvasTouchEnd(e) {
+    if (App.draggingNode) {
+        // Select on tap
+        if (e.changedTouches.length === 1) {
+            const touch = e.changedTouches[0];
+            const rect = App.canvas.getBoundingClientRect();
+            const sx = touch.clientX - rect.left;
+            const sy = touch.clientY - rect.top;
+            const node = getNodeAt(sx, sy);
+            if (node && node.id === App.draggingNode.id) {
+                App.selectedNodeId = node.id;
+                showNodeDetail(node);
+                switchRightTab('node');
+            }
+        }
+        App.draggingNode = null;
+    }
+    App.isPanning = false;
+}
+
+// --- Canvas Mode ---
+function setCanvasMode(mode) {
+    App.canvasMode = mode;
+    document.getElementById('btnSelect').classList.toggle('active', mode === 'select');
+    document.getElementById('btnPan').classList.toggle('active', mode === 'pan');
+    App.canvas.style.cursor = mode === 'pan' ? 'grab' : 'default';
+}
+
+// --- Node Detail ---
+async function showNodeDetail(node) {
+    const emptyEl = document.getElementById('nodeEmpty');
+    const detailEl = document.getElementById('nodeDetail');
+    emptyEl.classList.add('hidden');
+    detailEl.classList.remove('hidden');
+
+    let connections = [];
+    try {
+        const details = await API(`/api/nodes/${node.id}`);
+        connections = details.connected || [];
+    } catch (e) {
+        // Fallback: find edges manually
+        App.edges.forEach(edge => {
+            if (edge.source === node.id || edge.from === node.id) {
+                const targetId = edge.target || edge.to;
+                const target = App.nodes.find(n => n.id === targetId);
+                if (target) connections.push({ node: target, edgeType: edge.type });
+            } else if (edge.target === node.id || edge.to === node.id) {
+                const sourceId = edge.source || edge.from;
+                const target = App.nodes.find(n => n.id === sourceId);
+                if (target) connections.push({ node: target, edgeType: edge.type });
+            }
+        });
+    }
+
+    const status = node.status || 'concept';
+    const initials = node.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+
+    detailEl.innerHTML = `
+        <div class="node-detail-header">
+            <div class="node-detail-avatar status-${status}">${initials}</div>
+            <div class="node-detail-info">
+                <h3>${escapeHtml(node.name)}</h3>
+                <span class="node-id">${node.id}</span>
+            </div>
+        </div>
+
+        <div class="node-detail-section">
+            <h4>Status</h4>
+            <span class="pivot-badge ${status}" style="display:inline-block;">${status}</span>
+        </div>
+
+        <div class="node-detail-section">
+            <h4>Connections (${connections.length})</h4>
+            ${connections.length > 0 ? connections.map(c => `
+                <div class="connected-node" onclick="selectNodeInGraph('${c.node.id}')">
+                    <span class="conn-dot" style="background:${c.edgeType === 'semantic' ? 'var(--accent)' : 'var(--teal)'}"></span>
+                    <span class="text-sm">${escapeHtml(c.node.name)}</span>
+                    <span class="conn-type">${c.edgeType || 'related'}</span>
+                </div>
+            `).join('') : '<p class="text-xs text-muted">No connections found</p>'}
+        </div>
+    `;
+}
+
+function renderNodeDetail() {
+    if (!App.selectedNodeId) {
+        document.getElementById('nodeEmpty').classList.remove('hidden');
+        document.getElementById('nodeDetail').classList.add('hidden');
+    }
+}
+
+function selectNodeInGraph(nodeId) {
+    const node = App.nodes.find(n => n.id === nodeId);
+    if (!node) return;
+
+    App.selectedNodeId = nodeId;
+    const pos = App.nodePositions[nodeId];
+    if (pos) {
+        App.camera.x = App.canvasWidth / 2 - pos.x * App.camera.zoom;
+        App.camera.y = App.canvasHeight / 2 - pos.y * App.camera.zoom;
+    }
+    showNodeDetail(node);
+}
+
+// --- Global Actions ---
+async function resetState() {
+    if (!confirm('Reset all state to initial sample data? This cannot be undone.')) return;
+    try {
+        await API('/api/init', { method: 'POST' });
+        App.state = await API('/api/state');
+        syncState();
+        App.nodePositions = {};
+        layoutNodes();
+        fitGraph();
+        renderAll();
+        showToast('State reset to sample data', 'success');
+    } catch (e) {
+        showToast('Failed to reset', 'error');
+    }
+}
+
+async function regenerateGraph() {
+    try {
+        const result = await API('/api/graph/connect', { method: 'POST' });
+        App.state = await API('/api/state');
+        syncState();
+        renderAll();
+        showToast(`Regenerated ${result.edges_generated} edges`, 'success');
+    } catch (e) {
+        showToast('Failed to regenerate graph', 'error');
+    }
+}
+
+// --- Keyboard Shortcuts ---
+document.addEventListener('keydown', (e) => {
+    // Focus command input with /
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        document.getElementById('commandInput').focus();
+    }
+    // Escape to blur
+    if (e.key === 'Escape') {
+        document.activeElement.blur();
+        App.selectedNodeId = null;
+        renderNodeDetail();
+    }
+});
+
+// --- Boot ---
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
 </body>
 </html>

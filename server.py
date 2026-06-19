@@ -1237,7 +1237,6 @@ def semantic_search_endpoint():
     except Exception as e:
         return jsonify({"error": str(e), "results": []}), 500
 
-
 @app.route('/api/analyze', methods=['POST'])
 def analyze_content_endpoint():
     """Analyze content using AI with RAG context"""
@@ -1258,7 +1257,6 @@ def analyze_content_endpoint():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route('/api/nodes/<node_id>/connections', methods=['GET'])
 def get_node_connections(node_id):
     """Get suggested connections for a node"""
@@ -1268,7 +1266,6 @@ def get_node_connections(node_id):
         "suggestions": suggestions,
         "count": len(suggestions)
     })
-
 
 @app.route('/api/graph/connect', methods=['POST'])
 def regenerate_edges():
@@ -1319,7 +1316,6 @@ def regenerate_edges():
         "edges_generated": len(new_edges),
         "total_edges": len(state["edges"])
     })
-
 
 # ============================================
 # HEALTH CHECK

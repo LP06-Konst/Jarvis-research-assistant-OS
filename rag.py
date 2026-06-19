@@ -12,21 +12,35 @@ from typing import List, Dict, Any, Optional
 _chroma_client = None
 _embedding_model = None
 _vector_collection = None
-ML_AVAILABLE = None
+
+# Set to True only after successful model load; never auto-download at import time
+# ML_AVAILABLE starts False; becomes True only after a successful import check.
+# The embedding model itself loads lazily on first actual search/upload.
+ML_AVAILABLE = False
+_ml_init_attempted = False
+_ml_model_loaded = False
 
 def check_ml_available():
-    """Check if ML libraries are available"""
-    global ML_AVAILABLE
-    if ML_AVAILABLE is None:
-        try:
-            import chromadb
-            from sentence_transformers import SentenceTransformer
-            ML_AVAILABLE = True
-        except ImportError as e:
-            print(f"ML libraries not available: {e}")
-            ML_AVAILABLE = False
+    """Check if ML libraries are importable (model loads lazily on first actual use)"""
+    global ML_AVAILABLE, _ml_init_attempted
+    if ML_AVAILABLE and _ml_model_loaded:
+        return True
+    if _ml_init_attempted:
+        return ML_AVAILABLE
+    _ml_init_attempted = True
+    try:
+        import chromadb
+        from sentence_transformers import SentenceTransformer
+        ML_AVAILABLE = True
+        print("[rag] ML libraries importable (model loads on first search/upload)")
+    except ImportError as e:
+        print(f"[rag] ML libraries not available: {e}")
+        ML_AVAILABLE = False
     return ML_AVAILABLE
 
+def is_ml_model_loaded():
+    """Check if the embedding model has been loaded into memory"""
+    return _ml_model_loaded
 
 def get_chroma_client():
     """Get or initialize ChromaDB client"""
@@ -36,16 +50,23 @@ def get_chroma_client():
         _chroma_client = chromadb.Client()
     return _chroma_client
 
-
 def get_embedding_model():
-    """Get or initialize embedding model"""
+    """Get or initialize embedding model (lazy, with timeout)"""
     global _embedding_model
     if _embedding_model is None:
-        from sentence_transformers import SentenceTransformer
-        # Use a lightweight but effective model
-        _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        try:
+            from sentence_transformers import SentenceTransformer
+            import os
+            os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
+            os.environ.setdefault("TRANSFORMERS_OFFLINE", "0")
+            # Use a lightweight but effective model
+            print("[rag] Loading sentence-transformer model (first use may take a moment)...")
+            _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+            print("[rag] Model loaded successfully")
+        except Exception as e:
+            print(f"[rag] Could not load embedding model: {e}")
+            raise
     return _embedding_model
-
 
 def get_vector_collection():
     """Get or initialize the main vector collection"""
@@ -59,7 +80,6 @@ def get_vector_collection():
         except:
             _vector_collection = client.create_collection("research_chunks")
     return _vector_collection
-
 
 def extract_text_from_pdf(pdf_path: str) -> List[Dict[str, Any]]:
     """Extract text from PDF with page-level chunking"""
@@ -77,7 +97,6 @@ def extract_text_from_pdf(pdf_path: str) -> List[Dict[str, Any]]:
     
     return chunks
 
-
 def chunk_text(text: str, page_num: int = 1, chunk_size: int = 500, overlap: int = 50) -> List[Dict[str, Any]]:
     """Split text into overlapping chunks for better retrieval"""
     # Clean the text
@@ -87,23 +106,27 @@ def chunk_text(text: str, page_num: int = 1, chunk_size: int = 500, overlap: int
         return []
     
     chunks = []
-    sentences = re.split(r'(?<=[.!?])\s+', text)
+    sentences = re.split(r'(?<=[.!?])\s+(?=[A-Z])', text)
     
     current_chunk = ""
     for sentence in sentences:
-        if len(current_chunk) + len(sentence) < chunk_size:
-            current_chunk += " " + sentence if current_chunk else sentence
-        else:
+        sentence = sentence.strip()
+        if not sentence:
+            continue
+        
+        if len(current_chunk) + len(sentence) + 1 > chunk_size:
             if current_chunk.strip():
                 chunks.append({
                     "text": current_chunk.strip(),
                     "page": page_num,
                     "char_count": len(current_chunk)
                 })
-            # Keep overlap for continuity
+            # Add overlap from previous chunk
             words = current_chunk.split()
-            overlap_words = words[-overlap//5:] if len(words) > overlap//5 else words
+            overlap_words = words[-(overlap//5):] if len(words) > overlap//5 else words
             current_chunk = " ".join(overlap_words) + " " + sentence
+        else:
+            current_chunk = current_chunk + " " + sentence if current_chunk else sentence
     
     # Don't forget the last chunk
     if current_chunk.strip():
@@ -115,7 +138,6 @@ def chunk_text(text: str, page_num: int = 1, chunk_size: int = 500, overlap: int
     
     return chunks
 
-
 def clean_text(text: str) -> str:
     """Clean and normalize text"""
     # Remove excessive whitespace
@@ -124,13 +146,11 @@ def clean_text(text: str) -> str:
     text = re.sub(r'[^\w\s.,!?;:\'\"-]', '', text)
     return text.strip()
 
-
 def generate_embeddings(texts: List[str]) -> List[List[float]]:
     """Generate embeddings for a list of texts"""
     model = get_embedding_model()
     embeddings = model.encode(texts)
     return embeddings.tolist()
-
 
 def store_chunks(source_id: str, project_id: str, chunks: List[Dict[str, Any]], metadata: Dict[str, Any] = None):
     """Store chunks in vector database with metadata"""
@@ -178,32 +198,31 @@ def store_chunks(source_id: str, project_id: str, chunks: List[Dict[str, Any]], 
         print(f"Error storing chunks: {e}")
         return []
 
-
 def semantic_search(query: str, project_id: Optional[str] = None, top_k: int = 5) -> List[Dict[str, Any]]:
-    """Perform semantic search against stored chunks"""
-    if not check_ml_available():
-        # Fallback to keyword search
+    """Perform semantic search against stored chunks. Falls back to text_search if ML not ready."""
+    global _ml_model_loaded
+
+    # If model not yet loaded, always use text search (non-blocking)
+    if not _ml_model_loaded:
         return text_search(query, project_id, top_k)
-    
-    collection = get_vector_collection()
-    if not collection:
-        # Fallback to keyword search
-        return text_search(query, project_id, top_k)
-    
+
     try:
         model = get_embedding_model()
-        
+        _ml_model_loaded = True
+        collection = get_vector_collection()
+        if not collection:
+            return text_search(query, project_id, top_k)
+
         query_embedding = model.encode([query]).tolist()[0]
-        
         where_filter = {"project_id": project_id} if project_id else None
-        
+
         try:
             results = collection.query(
                 query_embeddings=[query_embedding],
                 n_results=top_k,
                 where=where_filter
             )
-            
+
             formatted_results = []
             if results and results.get('documents'):
                 for i, doc in enumerate(results['documents'][0]):
@@ -213,7 +232,7 @@ def semantic_search(query: str, project_id: Optional[str] = None, top_k: int = 5
                         "source_id": results['metadatas'][0][i].get('source_id'),
                         "distance": results.get('distances', [[]])[0][i] if results.get('distances') else 0
                     })
-            
+
             return formatted_results
         except Exception as e:
             print(f"Search error: {e}")
@@ -221,7 +240,6 @@ def semantic_search(query: str, project_id: Optional[str] = None, top_k: int = 5
     except Exception as e:
         print(f"Semantic search error: {e}")
         return text_search(query, project_id, top_k)
-
 
 def text_search(query: str, project_id: Optional[str] = None, top_k: int = 5) -> List[Dict[str, Any]]:
     """Fallback text-based search when ML is not available"""
@@ -252,23 +270,20 @@ def text_search(query: str, project_id: Optional[str] = None, top_k: int = 5) ->
     
     return results[:top_k]
 
-
 def summarize_chunk(text: str, max_length: int = 200) -> str:
     """Generate a brief summary of a text chunk"""
     sentences = re.split(r'[.!?]+', text)
     
-    if len(sentences) <= 2:
+    if len(sentences) <= 1:
         return text[:max_length]
     
-    # Take first sentence + key parts
-    summary = sentences[0].strip()
-    if len(summary) < max_length // 2:
-        for s in sentences[1:3]:
-            if len(summary) + len(s) < max_length:
-                summary += ". " + s.strip()
-    
-    return summary if summary.endswith('.') else summary + "..."
-
+    summary = sentences[0]
+    for sentence in sentences[1:]:
+        if len(summary) + len(sentence) + 1 <= max_length:
+            summary += " " + sentence
+        else:
+            break
+    return summary.strip()
 
 def extract_key_concepts(text: str) -> List[str]:
     """Extract key concepts/topics from text using simple NLP"""
@@ -293,7 +308,6 @@ def extract_key_concepts(text: str) -> List[str]:
     sorted_concepts = sorted(concepts.items(), key=lambda x: x[1], reverse=True)
     return [concept for concept, count in sorted_concepts[:10]]
 
-
 def analyze_document_structure(chunks: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Analyze the structure and content of a document"""
     total_chars = sum(c.get("char_count", 0) for c in chunks)
@@ -316,7 +330,6 @@ def analyze_document_structure(chunks: List[Dict[str, Any]]) -> Dict[str, Any]:
         "sections": sections
     }
 
-
 def detect_sections(text: str) -> List[Dict[str, str]]:
     """Detect document sections based on common patterns"""
     section_patterns = [
@@ -336,7 +349,6 @@ def detect_sections(text: str) -> List[Dict[str, str]]:
     
     return sections[:20]  # Limit to 20 sections
 
-
 def compute_similarity(text1: str, text2: str) -> float:
     """Compute cosine similarity between two texts"""
     if not check_ml_available():
@@ -355,7 +367,6 @@ def compute_similarity(text1: str, text2: str) -> float:
         return dot_product / (norm1 * norm2) if norm1 * norm2 > 0 else 0
     except:
         return 0.0
-
 
 def find_related_chunks(source_id: str, chunk_text: str, threshold: float = 0.7) -> List[Dict[str, Any]]:
     """Find related chunks from other sources based on similarity"""

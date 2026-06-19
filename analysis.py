@@ -8,7 +8,6 @@ import re
 from typing import Dict, Any, List, Optional
 from rag import semantic_search, analyze_document_structure, extract_key_concepts
 
-
 class DialecticalAnalyzer:
     """AI analyzer with dialectical reasoning approach"""
     
@@ -23,8 +22,12 @@ class DialecticalAnalyzer:
     def analyze_content(self, query: str, project_id: Optional[str] = None, depth: str = "contextual") -> Dict[str, Any]:
         """Analyze content using RAG + dialectical reasoning"""
         
-        # Get relevant context from vector store
-        context_results = semantic_search(query, project_id=project_id, top_k=5)
+        # Get relevant context from vector store (non-blocking)
+        context_results = []
+        try:
+            context_results = semantic_search(query, project_id=project_id, top_k=5)
+        except Exception as e:
+            print(f"[analysis] Semantic search unavailable (ML not loaded or timed out): {e}")
         
         if not context_results:
             return self._generate_synthetic_response(query, [])
@@ -73,9 +76,9 @@ class DialecticalAnalyzer:
     def _find_connections(self, text: str) -> str:
         """Find connections between concepts in text"""
         concepts = extract_key_concepts(text)[:5]
-        if len(concepts) < 2:
-            return "Multiple concepts interconnected."
-        return f"These connect through shared theoretical foundations."
+        if len(concepts) >= 2:
+            return f"Key connections: {concepts[0]} and {concepts[1]} appear to influence each other. {concepts[2] if len(concepts) > 2 else ''} provides additional context."
+        return "Connections are being analyzed."
     
     def _identify_assumptions(self, text: str) -> str:
         """Identify key assumptions in the content"""
@@ -180,7 +183,6 @@ class DialecticalAnalyzer:
             }
         }
 
-
 def generate_node_suggestions(project_id: str, existing_nodes: List[Dict]) -> List[Dict[str, Any]]:
     """Generate node suggestions based on project content and existing graph"""
     
@@ -224,7 +226,6 @@ def generate_node_suggestions(project_id: str, existing_nodes: List[Dict]) -> Li
     
     return unique_suggestions[:5]
 
-
 def create_node_from_analysis(analysis_result: Dict[str, Any], query: str) -> Dict[str, Any]:
     """Create a new node from analysis results"""
     
@@ -240,7 +241,6 @@ def create_node_from_analysis(analysis_result: Dict[str, Any], query: str) -> Di
         "key_insights": extract_key_concepts(analysis_result.get('analysis', ''))[:5]
     }
 
-
 def suggest_edges(nodes: List[Dict], threshold: float = 0.6) -> List[Dict[str, str]]:
     """Suggest edges between nodes based on content similarity"""
     
@@ -251,25 +251,21 @@ def suggest_edges(nodes: List[Dict], threshold: float = 0.6) -> List[Dict[str, s
             text1 = node1.get('name', '') + ' ' + node1.get('description', '')
             text2 = node2.get('name', '') + ' ' + node2.get('description', '')
             
-            if len(text1) < 5 or len(text2) < 5:
-                continue
-            
-            try:
-                from rag import compute_similarity
-                similarity = compute_similarity(text1, text2)
-                
-                if similarity >= threshold:
-                    edges.append({
-                        "source": node1['id'],
-                        "target": node2['id'],
-                        "weight": similarity,
-                        "type": "semantic"
-                    })
-            except:
-                pass
+            if len(text1) >= 3 and len(text2) >= 3:
+                try:
+                    from rag import compute_similarity
+                    similarity = compute_similarity(text1, text2)
+                    if similarity >= threshold:
+                        edges.append({
+                            "source": node1['id'],
+                            "target": node2['id'],
+                            "weight": similarity,
+                            "type": "semantic"
+                        })
+                except:
+                    pass
     
     return edges
-
 
 def analyze_proposal_impact(proposal: Dict[str, Any], current_state: Dict) -> Dict[str, Any]:
     """Analyze the potential impact of a proposal on the research graph"""
@@ -311,15 +307,12 @@ def analyze_proposal_impact(proposal: Dict[str, Any], current_state: Dict) -> Di
     
     return impact
 
-
 # Singleton instance
 analyzer = DialecticalAnalyzer()
-
 
 def get_analyzer():
     """Get the singleton analyzer instance"""
     return analyzer
-
 
 # Helper to avoid circular import
 def get_vector_collection():
