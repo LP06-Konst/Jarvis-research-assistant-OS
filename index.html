@@ -1,1475 +1,1584 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jarvis Research OS</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Jarvis — Research OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   ROOT VARIABLES
+   ═══════════════════════════════════════════ */
+:root {
+  --bg-0: #0a0a0f;
+  --bg-1: #12121a;
+  --bg-2: #1a1a26;
+  --bg-3: #22222e;
+  --bg-hover: #2a2a38;
+  --border: rgba(255,255,255,0.06);
+  --border-active: rgba(99,102,241,0.5);
+  --border-hover: rgba(255,255,255,0.12);
+  --text-0: #f0f0f5;
+  --text-1: #b0b0c0;
+  --text-2: #707088;
+  --text-3: #484860;
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+  --accent-dim: rgba(99,102,241,0.15);
+  --green: #22c55e;
+  --green-dim: rgba(34,197,94,0.15);
+  --amber: #f59e0b;
+  --amber-dim: rgba(245,158,11,0.15);
+  --red: #ef4444;
+  --red-dim: rgba(239,68,68,0.15);
+  --cyan: #06b6d4;
+  --cyan-dim: rgba(6,182,212,0.15);
+  --purple: #a855f7;
+  --purple-dim: rgba(168,85,247,0.15);
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --transition: 0.15s ease;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ═══════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; overflow: hidden; }
+body {
+  background: var(--bg-0);
+  color: var(--text-0);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: var(--font-sans); cursor: pointer; border: none; background: none; color: inherit; }
+input, textarea, select { font-family: var(--font-sans); color: var(--text-0); background: transparent; border: none; outline: none; resize: none; }
+input::placeholder, textarea::placeholder { color: var(--text-3); }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--text-3); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-2); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); }
+
+/* ═══════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════ */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes ripple { to { transform: scale(2.5); opacity: 0; } }
+@keyframes dotBounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-6px); } }
+.fade-up { animation: fadeUp 0.35s ease forwards; }
+.fade-in { animation: fadeIn 0.25s ease forwards; }
+
+/* ═══════════════════════════════════════════
+   SCREENS
+   ═══════════════════════════════════════════ */
+.screen { display: none; height: 100vh; }
+.screen.active { display: flex; }
+
+/* ═══════════════════════════════════════════
+   HOME / LANDING
+   ═══════════════════════════════════════════ */
+#home {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-0);
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(6,182,212,0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 90%, rgba(168,85,247,0.04) 0%, transparent 50%);
+}
+.home-inner { width: 100%; max-width: 520px; padding: 0 32px; }
+.home-logo {
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--text-0) 0%, var(--accent-hover) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 4px;
+}
+.home-sub {
+  font-size: 13px;
+  color: var(--text-2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 48px;
+  font-weight: 500;
+}
+.home-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.home-divider { height: 1px; background: var(--border); margin: 28px 0; }
+
+/* Project Cards */
+.proj-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.proj-card:hover { border-color: var(--border-hover); background: var(--bg-2); transform: translateY(-1px); }
+.proj-card-name { font-size: 15px; font-weight: 600; color: var(--text-0); margin-bottom: 2px; }
+.proj-card-meta { font-size: 12px; color: var(--text-2); }
+.proj-badges { display: flex; gap: 6px; }
+.proj-badge {
+  font-size: 11px; padding: 3px 10px; border-radius: 99px;
+  background: var(--bg-3); color: var(--text-2);
+  border: 1px solid var(--border); font-weight: 500;
+}
+.proj-badge.accent { background: var(--accent-dim); color: var(--accent); border-color: rgba(99,102,241,0.3); }
+.proj-badge.amber { background: var(--amber-dim); color: var(--amber); border-color: rgba(245,158,11,0.3); }
+
+/* Buttons */
+.btn-primary {
+  width: 100%; padding: 14px 20px; background: var(--accent); color: #fff;
+  border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all var(--transition); margin-bottom: 8px;
+  letter-spacing: 0.01em;
+}
+.btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+.btn-secondary {
+  width: 100%; padding: 12px 20px; background: transparent;
+  color: var(--text-1); border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 13px; font-weight: 500; cursor: pointer; transition: all var(--transition);
+}
+.btn-secondary:hover { border-color: var(--border-hover); background: var(--bg-2); color: var(--text-0); }
+
+/* New Project Form */
+.new-form {
+  background: var(--bg-1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px; margin-top: 8px;
+  animation: fadeUp 0.2s ease;
+}
+.form-input {
+  width: 100%; padding: 11px 14px; background: var(--bg-2);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--text-0); font-size: 14px; margin-bottom: 10px;
+  transition: border-color var(--transition);
+}
+.form-input:focus { border-color: var(--accent); }
+.form-row { display: flex; gap: 8px; }
+.btn-confirm {
+  padding: 10px 20px; background: var(--accent); color: #fff;
+  border: none; border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.btn-confirm:hover { background: var(--accent-hover); }
+.btn-cancel {
+  padding: 10px 16px; background: transparent; color: var(--text-2);
+  border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; cursor: pointer;
+}
+.btn-cancel:hover { border-color: var(--border-hover); }
+.form-error { font-size: 12px; color: var(--red); margin-top: 8px; }
+
+/* Connection Status */
+.conn-status {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: var(--radius);
+  background: var(--bg-1); border: 1px solid var(--border);
+  margin-top: 20px; font-size: 12px; color: var(--text-2);
+}
+.conn-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.conn-dot.ok { background: var(--green); box-shadow: 0 0 8px rgba(34,197,94,0.5); }
+.conn-dot.err { background: var(--red); box-shadow: 0 0 8px rgba(239,68,68,0.5); }
+.conn-dot.loading { background: var(--amber); animation: pulse 1.5s infinite; }
+
+/* ═══════════════════════════════════════════
+   WORKBENCH LAYOUT
+   ═══════════════════════════════════════════ */
+#workbench { flex-direction: column; overflow: hidden; }
+
+/* Top Bar */
+#topbar {
+  height: 48px; background: var(--bg-1); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 16px; gap: 12px;
+  flex-shrink: 0; z-index: 50;
+}
+.topbar-logo { font-size: 18px; font-weight: 700; color: var(--text-0); letter-spacing: -0.02em; }
+.topbar-sep { width: 1px; height: 24px; background: var(--border); }
+.topbar-project { font-size: 13px; color: var(--text-2); font-weight: 500; }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.topbar-status {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 99px;
+  background: var(--green-dim); font-size: 11px; color: var(--green); font-weight: 500;
+}
+.topbar-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+.topbar-btn {
+  font-size: 12px; padding: 6px 12px; border-radius: var(--radius);
+  border: 1px solid var(--border); color: var(--text-2);
+  cursor: pointer; transition: all var(--transition); font-weight: 500;
+}
+.topbar-btn:hover { border-color: var(--border-hover); background: var(--bg-2); color: var(--text-0); }
+.topbar-btn.accent { background: var(--accent-dim); color: var(--accent); border-color: rgba(99,102,241,0.3); }
+.topbar-btn.accent:hover { background: var(--accent); color: #fff; }
+
+/* Main workspace grid */
+#workspace {
+  display: grid;
+  grid-template-columns: 240px 1fr 320px;
+  flex: 1; overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════
+   LEFT PANEL — GRAPH
+   ═══════════════════════════════════════════ */
+#left {
+  background: var(--bg-1); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.panel-header {
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.panel-title { font-size: 12px; font-weight: 600; color: var(--text-1); text-transform: uppercase; letter-spacing: 0.06em; }
+.panel-count {
+  font-size: 11px; padding: 2px 8px; border-radius: 99px;
+  background: var(--accent-dim); color: var(--accent); font-weight: 600;
+}
+#graph-wrap { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+#graph-canvas { width: 100%; height: 100%; cursor: grab; }
+#graph-canvas:active { cursor: grabbing; }
+
+.graph-legend {
+  position: absolute; bottom: 8px; left: 10px; display: flex; flex-direction: column; gap: 4px;
+  background: rgba(10,10,15,0.8); backdrop-filter: blur(8px);
+  padding: 8px 10px; border-radius: var(--radius); border: 1px solid var(--border);
+}
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text-2); }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* Pivots List */
+#pivots-list { border-top: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; max-height: 200px; }
+.pivot-item {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background var(--transition);
+}
+.pivot-item:hover { background: var(--bg-2); }
+.pivot-item-label { font-size: 12px; color: var(--amber); font-weight: 600; margin-bottom: 2px; }
+.pivot-item-desc { font-size: 11px; color: var(--text-2); line-height: 1.5; }
+
+/* ═══════════════════════════════════════════
+   CENTER PANEL
+   ═══════════════════════════════════════════ */
+#center { display: flex; flex-direction: column; overflow: hidden; background: var(--bg-0); }
+
+/* Tabs Bar */
+#tabs-bar {
+  display: flex; background: var(--bg-1); border-bottom: 1px solid var(--border);
+  overflow-x: auto; flex-shrink: 0;
+}
+#tabs-bar::-webkit-scrollbar { height: 0; }
+.tab {
+  padding: 11px 18px; font-size: 12px; font-weight: 500; color: var(--text-2);
+  cursor: pointer; border-right: 1px solid var(--border); white-space: nowrap;
+  transition: all var(--transition); flex-shrink: 0; position: relative;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.tab:hover { color: var(--text-1); background: var(--bg-2); }
+.tab.active { color: var(--text-0); background: var(--bg-0); }
+.tab.active::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 2px; background: var(--accent);
+}
+.tab-close {
+  margin-left: 8px; font-size: 14px; color: var(--text-3);
+  transition: color var(--transition); line-height: 1;
+}
+.tab-close:hover { color: var(--red); }
+
+/* Panels Container */
+#panels { flex: 1; overflow: hidden; position: relative; }
+.panel { display: none; height: 100%; flex-direction: column; overflow: hidden; }
+.panel.active { display: flex; }
+
+/* ── Drawing Table Panel ── */
+.dt-canvas {
+  flex: 1; overflow-y: auto; padding: 20px;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0);
+  background-size: 32px 32px;
+}
+.dt-card {
+  background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 14px 16px; margin-bottom: 10px; cursor: pointer;
+  transition: all var(--transition); position: relative;
+}
+.dt-card:hover { border-color: var(--border-hover); transform: translateX(4px); }
+.dt-card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.dt-card-domain { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.dt-card-name { font-size: 16px; font-weight: 600; color: var(--text-0); margin-bottom: 4px; }
+.dt-card-desc { font-size: 13px; color: var(--text-1); line-height: 1.6; }
+.dt-card-status {
+  position: absolute; top: 12px; right: 12px;
+  font-size: 10px; padding: 3px 10px; border-radius: 99px;
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.status-open { background: var(--amber-dim); color: var(--amber); }
+.status-developing { background: var(--cyan-dim); color: var(--cyan); }
+.status-established { background: var(--green-dim); color: var(--green); }
+.status-concept { background: var(--purple-dim); color: var(--purple); }
+.dt-card-conns { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+.dt-card-conn {
+  font-size: 10px; padding: 3px 8px; border-radius: 4px;
+  background: var(--bg-2); border: 1px solid var(--border); color: var(--text-2);
+}
+
+/* ── Library Panel ── */
+.lib-toolbar {
+  display: flex; gap: 8px; padding: 14px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.lib-search {
+  flex: 1; padding: 10px 14px; background: var(--bg-2);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--text-0); font-size: 13px; transition: border-color var(--transition);
+}
+.lib-search:focus { border-color: var(--accent); }
+.lib-search-btn {
+  padding: 10px 18px; background: var(--accent); color: #fff;
+  border: none; border-radius: var(--radius); font-size: 13px; font-weight: 600;
+}
+.lib-search-btn:hover { background: var(--accent-hover); }
+#lib-results { flex: 1; overflow-y: auto; padding: 14px; }
+.lib-card {
+  background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 14px; margin-bottom: 10px;
+}
+.lib-card-source { font-size: 11px; color: var(--cyan); font-weight: 500; margin-bottom: 6px; }
+.lib-card-text { font-size: 13px; color: var(--text-1); line-height: 1.7; font-style: italic; }
+.lib-card-score { font-size: 11px; color: var(--text-3); margin-top: 6px; }
+.lib-empty { text-align: center; padding: 40px 20px; color: var(--text-2); }
+.lib-empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.5; }
+
+/* ── Sources / Upload Panel ── */
+.sources-toolbar {
+  display: flex; align-items: center; gap: 10px; padding: 14px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.upload-btn {
+  padding: 10px 18px; background: var(--accent); color: #fff;
+  border: none; border-radius: var(--radius); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all var(--transition);
+}
+.upload-btn:hover { background: var(--accent-hover); }
+#sources-list { flex: 1; overflow-y: auto; padding: 14px; }
+.source-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; background: var(--bg-1); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 8px; transition: all var(--transition);
+}
+.source-item:hover { border-color: var(--border-hover); }
+.source-icon { font-size: 20px; }
+.source-info { flex: 1; }
+.source-name { font-size: 13px; font-weight: 500; color: var(--text-0); }
+.source-meta { font-size: 11px; color: var(--text-2); }
+.source-delete {
+  padding: 4px 8px; border-radius: 4px; color: var(--text-3);
+  transition: all var(--transition); font-size: 12px;
+}
+.source-delete:hover { color: var(--red); background: var(--red-dim); }
+
+/* ── Analysis Panel ── */
+.analysis-wrap { flex: 1; overflow-y: auto; padding: 20px; }
+.analysis-section { margin-bottom: 24px; }
+.analysis-section-title { font-size: 14px; font-weight: 600; color: var(--text-0); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.analysis-section-title .icon { font-size: 16px; }
+.analysis-text { font-size: 13px; color: var(--text-1); line-height: 1.7; white-space: pre-wrap; }
+.analysis-card {
+  background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 14px; margin-bottom: 8px;
+}
+.analysis-card-title { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+.analysis-card-body { font-size: 13px; color: var(--text-1); line-height: 1.6; }
+
+/* ── Proposals Panel ── */
+.proposal-item {
+  background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 16px; margin: 14px; transition: all var(--transition);
+}
+.proposal-item:hover { border-color: var(--border-hover); }
+.proposal-type {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+  font-weight: 600; margin-bottom: 6px; padding: 2px 8px;
+  border-radius: 4px; display: inline-block;
+}
+.proposal-type.add_node { background: var(--green-dim); color: var(--green); }
+.proposal-type.add_edge { background: var(--cyan-dim); color: var(--cyan); }
+.proposal-type.create_pivot { background: var(--amber-dim); color: var(--amber); }
+.proposal-type.analysis { background: var(--purple-dim); color: var(--purple); }
+.proposal-type.search { background: var(--accent-dim); color: var(--accent); }
+.proposal-title { font-size: 15px; font-weight: 600; color: var(--text-0); margin-bottom: 6px; }
+.proposal-desc { font-size: 13px; color: var(--text-1); line-height: 1.6; margin-bottom: 12px; }
+.proposal-actions { display: flex; gap: 8px; }
+.proposal-approve {
+  padding: 8px 16px; background: var(--green); color: #fff;
+  border: none; border-radius: var(--radius); font-size: 12px; font-weight: 600;
+}
+.proposal-approve:hover { opacity: 0.9; }
+.proposal-reject {
+  padding: 8px 16px; background: transparent; color: var(--text-2);
+  border: 1px solid var(--border); border-radius: var(--radius); font-size: 12px; font-weight: 500;
+}
+.proposal-reject:hover { border-color: var(--red); color: var(--red); }
+.proposal-empty { text-align: center; padding: 40px 20px; color: var(--text-2); }
+
+/* ── Custom / Dynamic Panel ── */
+.custom-wrap { flex: 1; overflow-y: auto; padding: 20px; }
+.custom-wrap h3 { font-size: 18px; font-weight: 600; color: var(--text-0); margin-bottom: 8px; }
+.custom-wrap p { font-size: 14px; color: var(--text-1); line-height: 1.7; margin-bottom: 12px; }
+
+/* ═══════════════════════════════════════════
+   RIGHT PANEL — AGENT CHAT
+   ═══════════════════════════════════════════ */
+#right {
+  background: var(--bg-1); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* Chat Messages */
+#chat-msgs { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.msg { animation: fadeUp 0.2s ease; }
+.msg-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.msg-role {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.msg-user .msg-role { color: var(--cyan); }
+.msg-agent .msg-role { color: var(--green); }
+.msg-system .msg-role { color: var(--text-2); }
+.msg-cmd .msg-role { color: var(--amber); }
+.msg-bubble {
+  padding: 10px 14px; border-radius: var(--radius); font-size: 13px; line-height: 1.65;
+}
+.msg-user .msg-bubble { background: var(--bg-2); border: 1px solid var(--border); color: var(--text-0); }
+.msg-agent .msg-bubble { background: var(--green-dim); border: 1px solid rgba(34,197,94,0.2); color: var(--text-0); }
+.msg-system .msg-bubble { background: var(--bg-2); border: 1px solid var(--border); color: var(--text-2); font-size: 12px; }
+.msg-cmd .msg-bubble { background: var(--amber-dim); border: 1px solid rgba(245,158,11,0.2); color: var(--amber); font-size: 12px; }
+
+/* Typing indicator */
+.typing-indicator { display: flex; gap: 4px; padding: 10px 14px; }
+.typing-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--text-3);
+  animation: dotBounce 1.2s infinite ease-in-out;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+/* Input Area */
+#input-area { border-top: 1px solid var(--border); padding: 12px; flex-shrink: 0; }
+.mode-row { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
+.mode-btn {
+  padding: 5px 12px; font-size: 11px; font-weight: 500;
+  border-radius: var(--radius); border: 1px solid var(--border);
+  color: var(--text-2); cursor: pointer; transition: all var(--transition);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.mode-btn:hover { border-color: var(--border-hover); color: var(--text-1); }
+.mode-btn.active { color: var(--accent); border-color: var(--accent); background: var(--accent-dim); }
+.input-row { display: flex; gap: 8px; }
+#chat-input {
+  flex: 1; padding: 10px 14px; background: var(--bg-2);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--text-0); font-size: 13px; min-height: 44px; max-height: 120px;
+  line-height: 1.5; transition: border-color var(--transition);
+}
+#chat-input:focus { border-color: var(--accent); }
+#send-btn {
+  padding: 10px 16px; background: var(--accent); color: #fff;
+  border: none; border-radius: var(--radius); font-size: 14px; font-weight: 600;
+  align-self: flex-end; transition: all var(--transition);
+}
+#send-btn:hover { background: var(--accent-hover); }
+#send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+#hint-bar {
+  padding: 8px 12px; background: var(--bg-2); border-top: 1px solid var(--border);
+  font-size: 11px; color: var(--text-3); flex-shrink: 0;
+}
+#hint-bar code { color: var(--cyan); font-family: var(--font-mono); font-size: 11px; }
+
+/* ═══════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ═══════════════════════════════════════════ */
+#toast-container {
+  position: fixed; bottom: 20px; right: 20px; z-index: 999;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  padding: 12px 18px; border-radius: var(--radius);
+  background: var(--bg-2); border: 1px solid var(--border);
+  color: var(--text-0); font-size: 13px; font-weight: 500;
+  box-shadow: var(--shadow); animation: slideIn 0.3s ease;
+  max-width: 360px;
+}
+.toast.success { border-color: rgba(34,197,94,0.3); background: var(--green-dim); color: var(--green); }
+.toast.error { border-color: rgba(239,68,68,0.3); background: var(--red-dim); color: var(--red); }
+.toast.info { border-color: rgba(99,102,241,0.3); background: var(--accent-dim); color: var(--accent); }
+
+/* ═══════════════════════════════════════════
+   UPLOAD MODAL
+   ═══════════════════════════════════════════ */
+#upload-modal {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  z-index: 200; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+#upload-modal.show { display: flex; }
+.modal-box {
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: var(--radius-xl); padding: 28px; width: 440px;
+  max-width: 90vw; box-shadow: var(--shadow);
+}
+.modal-title { font-size: 18px; font-weight: 700; color: var(--text-0); margin-bottom: 6px; }
+.modal-desc { font-size: 13px; color: var(--text-2); line-height: 1.6; margin-bottom: 18px; }
+.upload-zone {
+  border: 2px dashed var(--border-hover); border-radius: var(--radius-lg);
+  padding: 32px; text-align: center; cursor: pointer;
+  transition: all var(--transition); margin-bottom: 16px;
+}
+.upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: var(--accent-dim); }
+.upload-zone-icon { font-size: 28px; margin-bottom: 8px; }
+.upload-zone-text { font-size: 13px; color: var(--text-2); }
+.upload-zone-text strong { color: var(--accent); }
+.upload-progress { margin: 12px 0; }
+.upload-progress-bar { height: 4px; background: var(--bg-0); border-radius: 2px; overflow: hidden; }
+.upload-progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
+.upload-file-info { font-size: 12px; color: var(--text-2); margin-top: 6px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ═══════════════════════════════════════════
+   LOADING / EMPTY STATES
+   ═══════════════════════════════════════════ */
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; }
+.empty-state-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.3; }
+.empty-state-text { font-size: 14px; color: var(--text-2); text-align: center; line-height: 1.6; }
+.empty-state-hint { font-size: 12px; color: var(--text-3); margin-top: 8px; }
+.loading-overlay {
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px; color: var(--text-2); font-size: 13px; gap: 10px;
+}
+.spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+</style>
 </head>
 <body>
+<div id="root">
 
-<div id="app">
-    <!-- ============ HEADER ============ -->
-    <header class="header">
-        <div class="header-logo">
-            <div class="logo-icon">J</div>
-            <div class="logo-text"><span>Jarvis</span> Research OS</div>
-        </div>
-        <div class="header-actions">
-            <div class="header-status">
-                <div class="status-dot" id="statusDot"></div>
-                <span id="statusText">Connecting...</span>
-            </div>
-            <button class="header-btn" onclick="resetState()" title="Reset to sample data">
-                &#x21bb; Reset
-            </button>
-            <button class="header-btn" onclick="regenerateGraph()" title="Regenerate edges">
-                &#x1F504; Connect
-            </button>
-            <button class="header-btn primary" onclick="showNewProjectInput()">
-                + New Project
-            </button>
-        </div>
-    </header>
-
-    <!-- ============ MAIN WORKSPACE ============ -->
-    <div class="workspace">
-
-        <!-- ======== LEFT SIDEBAR ======== -->
-        <aside class="sidebar">
-            <!-- Projects -->
-            <div class="sidebar-section">
-                <div class="sidebar-section-header" onclick="toggleSection('projects')">
-                    <h3>&#x1F4C1; Projects <span class="section-count" id="projectCount">0</span></h3>
-                    <span class="sidebar-icon-btn" id="projectsToggle">&#x25BC;</span>
-                </div>
-                <div class="sidebar-section-body" id="projectsList"></div>
-                <div class="new-project-row hidden" id="newProjectRow">
-                    <input type="text" id="newProjectName" placeholder="Project name..." 
-                           onkeydown="if(event.key==='Enter')createProject()">
-                    <button onclick="createProject()">Create</button>
-                </div>
-            </div>
-
-            <!-- Sources -->
-            <div class="sidebar-section">
-                <div class="sidebar-section-header" onclick="toggleSection('sources')">
-                    <h3>&#x1F4C4; Sources <span class="section-count" id="sourceCount">0</span></h3>
-                    <span class="sidebar-icon-btn" id="sourcesToggle">&#x25BC;</span>
-                </div>
-                <div class="sidebar-section-body" id="sourcesList"></div>
-                <div class="upload-zone" id="uploadZone"
-                     ondragover="handleDragOver(event)" 
-                     ondragleave="handleDragLeave(event)" 
-                     ondrop="handleDrop(event)"
-                     onclick="document.getElementById('fileInput').click()">
-                    <div class="upload-icon">&#x1F4E6;</div>
-                    <div class="upload-text">Drop PDF here or click to upload</div>
-                    <div class="upload-hint">Supports PDF, TXT, MD files</div>
-                </div>
-                <input type="file" id="fileInput" accept=".pdf,.txt,.md,.html" 
-                       style="display:none" onchange="handleFileSelect(event)">
-                <div class="upload-progress" id="uploadProgress">
-                    <div class="progress-spinner"></div>
-                    <span class="progress-text" id="uploadProgressText">Processing...</span>
-                    <span class="progress-chunks" id="uploadChunks"></span>
-                </div>
-            </div>
-
-            <!-- Pivots -->
-            <div class="sidebar-section">
-                <div class="sidebar-section-header" onclick="toggleSection('pivots')">
-                    <h3>&#x1F527; Pivots <span class="section-count" id="pivotCount">0</span></h3>
-                    <span class="sidebar-icon-btn" id="pivotsToggle">&#x25BC;</span>
-                </div>
-                <div class="sidebar-section-body" id="pivotsList"></div>
-            </div>
-        </aside>
-
-        <!-- ======== CENTER CANVAS ======== -->
-        <main class="canvas-area">
-            <div class="canvas-toolbar">
-                <div class="canvas-toolbar-left">
-                    <span class="toolbar-btn active" id="btnSelect" onclick="setCanvasMode('select')">
-                        &#x1F5B1; Select
-                    </span>
-                    <span class="toolbar-btn" id="btnPan" onclick="setCanvasMode('pan')">
-                        &#x270B; Pan
-                    </span>
-                </div>
-                <div class="canvas-stats" id="canvasStats">
-                    <span><span class="stat-dot" style="background:var(--accent)"></span> <span id="nodeCount">0</span> nodes</span>
-                    <span><span class="stat-dot" style="background:var(--teal)"></span> <span id="edgeCount">0</span> edges</span>
-                </div>
-                <div class="canvas-toolbar-right">
-                    <span class="toolbar-btn" onclick="zoomCanvas(1.2)">&#x2795;</span>
-                    <span class="toolbar-btn" onclick="zoomCanvas(0.8)">&#x2796;</span>
-                    <span class="toolbar-btn" onclick="fitGraph()">&#x2922; Fit</span>
-                </div>
-            </div>
-            <div class="canvas-container" id="canvasContainer">
-                <canvas id="graphCanvas"></canvas>
-                <div class="canvas-tooltip" id="canvasTooltip"></div>
-                <div class="loading-overlay" id="canvasLoading">
-                    <div class="loading-spinner"></div>
-                </div>
-            </div>
-        </main>
-
-        <!-- ======== RIGHT PANEL ======== -->
-        <aside class="right-panel">
-            <div class="right-panel-header">
-                <h2>&#x1F9E0; Analysis</h2>
-            </div>
-            <div class="right-panel-tabs">
-                <button class="right-panel-tab active" onclick="switchRightTab('proposals')" id="tabProposals">
-                    Proposals
-                </button>
-                <button class="right-panel-tab" onclick="switchRightTab('node')" id="tabNode">
-                    Node Details
-                </button>
-                <button class="right-panel-tab" onclick="switchRightTab('search')" id="tabSearch">
-                    Search
-                </button>
-            </div>
-            <div class="right-panel-content" id="rightPanelContent">
-                <!-- Proposals View -->
-                <div id="proposalsView">
-                    <div class="empty-state" id="proposalsEmpty">
-                        <div class="empty-icon">&#x1F4AC;</div>
-                        <h3>No proposals yet</h3>
-                        <p>Type a command in the bar below to start your research session</p>
-                    </div>
-                    <div id="proposalsList"></div>
-                </div>
-                <!-- Node Details View -->
-                <div id="nodeView" class="hidden">
-                    <div class="empty-state" id="nodeEmpty">
-                        <div class="empty-icon">&#x1F5FA;</div>
-                        <h3>Select a node</h3>
-                        <p>Click on any node in the graph to view its details and connections</p>
-                    </div>
-                    <div class="node-detail hidden" id="nodeDetail"></div>
-                </div>
-                <!-- Search View -->
-                <div id="searchView" class="hidden">
-                    <div class="new-project-row" style="padding:0 0 14px;">
-                        <input type="text" id="searchInput" placeholder="Search your sources..." 
-                               onkeydown="if(event.key==='Enter')performSearch()">
-                        <button onclick="performSearch()">Search</button>
-                    </div>
-                    <div id="searchResults">
-                        <div class="empty-state">
-                            <div class="empty-icon">&#x1F50D;</div>
-                            <h3>Semantic search</h3>
-                            <p>Search across all your uploaded sources using natural language queries</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </aside>
-
+<!-- ═══════ HOME SCREEN ═══════ -->
+<div id="home" class="screen active">
+  <div class="home-inner fade-up">
+    <div class="home-logo">Jarvis</div>
+    <div class="home-sub">Research Operating System</div>
+    <div id="home-projects"></div>
+    <div id="home-form"></div>
+    <div id="conn-status" class="conn-status">
+      <div class="conn-dot loading" id="conn-dot"></div>
+      <span id="conn-text">Checking connection...</span>
     </div>
-
-    <!-- ============ BOTTOM COMMAND BAR ============ -->
-    <div class="bottom-bar">
-        <div class="bottom-bar-header">
-            <h2>&#x2328; Command Interface</h2>
-        </div>
-        <div class="bottom-bar-body">
-            <!-- Command Input -->
-            <div class="command-input-area">
-                <div class="command-input-wrapper">
-                    <input type="text" id="commandInput" 
-                           placeholder='Type a command... (e.g. "add node Machine Learning", "search neural networks")'
-                           onkeydown="if(event.key==='Enter')sendCommand()">
-                    <button class="command-send-btn" id="sendBtn" onclick="sendCommand()">
-                        &#x27A4; Send
-                    </button>
-                </div>
-                <div id="lastResponse" style="font-size:12px;color:var(--text-tertiary);flex:1;overflow-y:auto;padding-right:4px;">
-                </div>
-            </div>
-            <!-- Command History -->
-            <div class="command-history">
-                <div class="command-history-header">Command History</div>
-                <div class="command-history-list" id="commandHistoryList">
-                    <div class="empty-state" id="historyEmpty" style="padding:20px;">
-                        <div class="empty-icon">&#x1F4CB;</div>
-                        <h3>History empty</h3>
-                        <p>Your commands will appear here</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+  </div>
 </div>
 
-<!-- Toast Container -->
-<div class="toast-container" id="toastContainer"></div>
+<!-- ═══════ WORKBENCH SCREEN ═══════ -->
+<div id="workbench" class="screen">
+  <div id="topbar">
+    <div class="topbar-logo">Jarvis</div>
+    <div class="topbar-sep"></div>
+    <div class="topbar-project" id="proj-label">No project</div>
+    <div class="topbar-right">
+      <div class="topbar-status"><div class="dot"></div><span>Online</span></div>
+      <button class="topbar-btn accent" onclick="openUploadModal()">Upload</button>
+      <button class="topbar-btn" onclick="goHome()">Projects</button>
+    </div>
+  </div>
+  <div id="workspace">
+    <!-- LEFT -->
+    <div id="left">
+      <div class="panel-header">
+        <span class="panel-title">Concept Graph</span>
+        <span class="panel-count" id="node-count">0</span>
+      </div>
+      <div id="graph-wrap">
+        <canvas id="graph-canvas"></canvas>
+        <div class="graph-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Established</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div>Developing</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Open</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>Concept</div>
+        </div>
+      </div>
+      <div class="panel-header">
+        <span class="panel-title">Open Pivots</span>
+        <span class="panel-count" id="pivot-count" style="background:var(--amber-dim);color:var(--amber)">0</span>
+      </div>
+      <div id="pivots-list"></div>
+    </div>
+    <!-- CENTER -->
+    <div id="center">
+      <div id="tabs-bar"></div>
+      <div id="panels"></div>
+    </div>
+    <!-- RIGHT -->
+    <div id="right">
+      <div class="panel-header">
+        <span class="panel-title">Agent Chat</span>
+        <span class="panel-count" id="msg-count" style="background:var(--green-dim);color:var(--green)">0</span>
+      </div>
+      <div id="chat-msgs"></div>
+      <div id="input-area">
+        <div class="mode-row">
+          <button class="mode-btn active" onclick="setMode('think',this)">Think</button>
+          <button class="mode-btn" onclick="setMode('command',this)">Command</button>
+          <button class="mode-btn" onclick="setMode('pivot',this)">Pivot</button>
+          <button class="mode-btn" onclick="setMode('bridge',this)">Bridge</button>
+          <button class="mode-btn" onclick="setMode('challenge',this)">Challenge</button>
+        </div>
+        <div class="input-row">
+          <textarea id="chat-input" placeholder="Type a thought, command, or question..." rows="1" onkeydown="handleInputKey(event)"></textarea>
+          <button id="send-btn" onclick="sendMessage()">&#10148;</button>
+        </div>
+      </div>
+      <div id="hint-bar">
+        Commands: <code>add node [name]</code> &middot; <code>add edge [A] and [B]</code> &middot; <code>search [query]</code> &middot; <code>analyze [topic]</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ═══════ UPLOAD MODAL ═══════ -->
+<div id="upload-modal">
+  <div class="modal-box">
+    <div class="modal-title">Upload Research File</div>
+    <div class="modal-desc">Upload PDF, TXT, or Markdown files to your project. They'll be indexed for semantic search and analysis.</div>
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+      <div class="upload-zone-icon">&#128194;</div>
+      <div class="upload-zone-text">Drop files here or <strong>browse</strong></div>
+    </div>
+    <input type="file" id="file-input" style="display:none" accept=".pdf,.txt,.md,.html" onchange="handleFileSelect(this.files)" multiple>
+    <div id="upload-progress" class="upload-progress" style="display:none">
+      <div class="upload-progress-bar"><div class="upload-progress-fill" id="upload-fill" style="width:0%"></div></div>
+      <div class="upload-file-info" id="upload-info"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeUploadModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ TOASTS ═══════ -->
+<div id="toast-container"></div>
 
 <script>
-// ============================================
-// Jarvis Research OS - Main Application
-// ============================================
-
-// --- Global State ---
-const App = {
-    state: null,
-    nodes: [],
-    edges: [],
-    projects: [],
-    pivots: [],
-    sources: [],
-    proposals: [],
-    commandHistory: [],
-    activeProjectId: null,
-    selectedNodeId: null,
-    canvasMode: 'select', // select | pan
-
-    // Canvas state
-    canvas: null,
-    ctx: null,
-    canvasWidth: 0,
-    canvasHeight: 0,
-    dpr: window.devicePixelRatio || 1,
-
-    // Camera / viewport
-    camera: { x: 0, y: 0, zoom: 1 },
-
-    // Interaction
-    draggingNode: null,
-    dragOffset: { x: 0, y: 0 },
-    isPanning: false,
-    panStart: { x: 0, y: 0 },
-    cameraStart: { x: 0, y: 0 },
-    hoveredNode: null,
-    mouseX: 0,
-    mouseY: 0,
-
-    // Node layout positions
-    nodePositions: {},
-
-    // Animation
-    animFrame: null,
+// ═══════════════════════════════════════════════
+// CONFIG & STATE
+// ═══════════════════════════════════════════════
+const API = '';  // Empty = same origin (Flask server)
+let state = {
+  projects: [],
+  activeProjectId: null,
+  nodes: [],
+  edges: [],
+  pivots: [],
+  proposals: [],
+  commandHistory: [],
+  health: null,
+  connected: false
 };
+let currentMode = 'think';
+let tabs = [];
+let activeTabId = null;
+let graphNodes = [];  // For canvas rendering
+let graphEdges = [];
+let graphAnimId = null;
+let dragNode = null;
+let canvasDrag = null;
 
-// --- Utility Functions ---
-const API = (path, opts = {}) => {
-    const base = window.location.origin;
-    const url = path.startsWith('http') ? path : `${base}${path}`;
-    const defaults = { headers: { 'Content-Type': 'application/json' }, ...opts };
-    if (opts.body && typeof opts.body === 'object') {
-        defaults.body = JSON.stringify(opts.body);
-    }
-    defaults.method = opts.method || (opts.body ? 'POST' : 'GET');
-    return fetch(url, defaults).then(r => r.json());
-};
-
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toastContainer');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
-    container.appendChild(toast);
-    setTimeout(() => {
-        toast.classList.add('fadeout');
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
-function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
-
-// --- Initialization ---
-async function init() {
-    try {
-        // Check health
-        const health = await API('/api/health');
-        document.getElementById('statusText').textContent = 
-            `Online | ${health.nodeCount || 0} nodes | ${health.projectCount || 0} projects`;
-        document.getElementById('statusDot').style.background = 'var(--green)';
-    } catch (e) {
-        document.getElementById('statusText').textContent = 'Offline';
-        document.getElementById('statusDot').style.background = 'var(--red)';
-        console.error('Failed to connect to backend:', e);
-    }
-
-    // Load full state
-    try {
-        App.state = await API('/api/state');
-        syncState();
-    } catch (e) {
-        console.error('Failed to load state:', e);
-    }
-
-    // Init canvas
-    initCanvas();
-    drawGraph();
-    startRenderLoop();
-
-    // Load command history
-    loadCommandHistory();
-
-    // Render all UI
-    renderAll();
-
-    // Set up resize handler
-    window.addEventListener('resize', () => {
-        resizeCanvas();
-        drawGraph();
+// ═══════════════════════════════════════════════
+// API HELPERS
+// ═══════════════════════════════════════════════
+async function api(url, options = {}) {
+  try {
+    const res = await fetch(API + url, {
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+      ...options
     });
-}
-
-function syncState() {
-    if (!App.state) return;
-    App.nodes = App.state.nodes || [];
-    App.edges = App.state.edges || [];
-    App.projects = App.state.projects || [];
-    App.pivots = App.state.pivots || [];
-    App.sources = App.state.projectSources || [];
-    App.proposals = App.state.proposals || [];
-    App.commandHistory = App.state.commandHistory || [];
-    App.activeProjectId = App.state.activeProjectId;
-}
-
-function renderAll() {
-    renderProjects();
-    renderSources();
-    renderPivots();
-    renderProposals();
-    renderCommandHistory();
-    updateCanvasStats();
-}
-
-// --- Projects ---
-function renderProjects() {
-    const container = document.getElementById('projectsList');
-    document.getElementById('projectCount').textContent = App.projects.length;
-
-    if (App.projects.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state" style="padding:16px;">
-                <div class="empty-icon">&#x1F4C1;</div>
-                <h3>No projects</h3>
-                <p>Create a project to organize your research</p>
-            </div>`;
-        return;
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || res.statusText);
     }
-
-    container.innerHTML = App.projects.map(p => `
-        <div class="project-item ${p.id === App.activeProjectId ? 'active' : ''}" 
-             onclick="setActiveProject('${p.id}')">
-            <div class="project-dot"></div>
-            <div class="project-info">
-                <div class="project-name">${escapeHtml(p.name)}</div>
-                <div class="project-meta">${new Date(p.createdAt).toLocaleDateString()}</div>
-            </div>
-            <button class="project-delete" onclick="event.stopPropagation(); deleteProject('${p.id}')" 
-                    title="Delete project">&#x2715;</button>
-        </div>
-    `).join('');
+    return await res.json();
+  } catch (e) {
+    if (e.message === 'Failed to fetch') throw new Error('Server not reachable');
+    throw e;
+  }
 }
 
-function showNewProjectInput() {
-    const row = document.getElementById('newProjectRow');
-    row.classList.toggle('hidden');
-    if (!row.classList.contains('hidden')) {
-        document.getElementById('newProjectName').focus();
+// ═══════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════
+function toast(msg, type = 'info', duration = 3000) {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, duration);
+}
+
+// ═══════════════════════════════════════════════
+// CONNECTION CHECK
+// ═══════════════════════════════════════════════
+async function checkConnection() {
+  const dot = document.getElementById('conn-dot');
+  const txt = document.getElementById('conn-text');
+  try {
+    const data = await api('/api/health');
+    state.health = data;
+    state.connected = true;
+    dot.className = 'conn-dot ok';
+    txt.textContent = `Connected — ${data.nodeCount || 0} nodes, ${data.projectCount || 0} projects`;
+    return true;
+  } catch (e) {
+    state.connected = false;
+    dot.className = 'conn-dot err';
+    txt.textContent = 'Connection failed: ' + e.message;
+    return false;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// HOME SCREEN
+// ═══════════════════════════════════════════════
+function goHome() {
+  state.activeProjectId = null;
+  document.getElementById('home').classList.add('active');
+  document.getElementById('workbench').classList.remove('active');
+  if (graphAnimId) cancelAnimationFrame(graphAnimId);
+  renderHome();
+}
+
+async function renderHome() {
+  const pc = document.getElementById('home-projects');
+  const fc = document.getElementById('home-form');
+  fc.innerHTML = '';
+  pc.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Loading...</div>';
+
+  if (!state.connected) {
+    const ok = await checkConnection();
+    if (!ok) {
+      pc.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#9888;</div><div class="empty-state-text">Cannot connect to server.<br>Make sure <code>python server.py</code> is running on port 5000.</div></div>';
+      return;
     }
+  }
+
+  try {
+    const projects = await api('/api/projects');
+    state.projects = projects;
+    let html = '';
+    if (projects.length > 0) {
+      html += '<div class="home-section-label">Your Projects</div>';
+      projects.forEach(p => {
+        const nc = (p.nodes || []).length;
+        const pc2 = (p.pivots || []).length;
+        html += `<div class="proj-card" onclick="openProject('${p.id}')">
+          <div><div class="proj-card-name">${esc(p.name)}</div>
+          <div class="proj-card-meta">${p.description || 'No description'}</div></div>
+          <div class="proj-badges">
+            <span class="proj-badge accent">${nc} nodes</span>
+            ${pc2 > 0 ? `<span class="proj-badge amber">${pc2} pivots</span>` : ''}
+          </div>
+        </div>`;
+      });
+      html += '<div class="home-divider"></div>';
+    }
+    html += '<div class="home-section-label">Create</div>';
+    html += '<button class="btn-primary" onclick="showNewForm()">+ New Research Project</button>';
+    html += '<button class="btn-secondary" onclick="initDemo()">Load Demo Data</button>';
+    pc.innerHTML = html;
+  } catch (e) {
+    pc.innerHTML = `<div class="empty-state"><div class="empty-state-icon">&#9888;</div><div class="empty-state-text">Error loading projects: ${esc(e.message)}</div></div>`;
+  }
+}
+
+function showNewForm() {
+  document.getElementById('home-form').innerHTML = `
+    <div class="new-form">
+      <div class="home-section-label">New Project</div>
+      <input class="form-input" id="new-proj-name" placeholder="Project name" autofocus/>
+      <input class="form-input" id="new-proj-desc" placeholder="Description (optional)"/>
+      <div class="form-row">
+        <button class="btn-confirm" onclick="createProject()">Create</button>
+        <button class="btn-cancel" onclick="document.getElementById('home-form').innerHTML=''">Cancel</button>
+      </div>
+      <div id="form-error" class="form-error"></div>
+    </div>`;
+  setTimeout(() => document.getElementById('new-proj-name')?.focus(), 50);
 }
 
 async function createProject() {
-    const input = document.getElementById('newProjectName');
-    const name = input.value.trim();
-    if (!name) return;
-
-    try {
-        await API('/api/projects', { method: 'POST', body: { name } });
-        input.value = '';
-        document.getElementById('newProjectRow').classList.add('hidden');
-        App.state = await API('/api/state');
-        syncState();
-        renderAll();
-        showToast(`Project "${name}" created`, 'success');
-    } catch (e) {
-        showToast('Failed to create project', 'error');
-    }
+  const name = document.getElementById('new-proj-name').value.trim();
+  const desc = document.getElementById('new-proj-desc').value.trim();
+  if (!name) { document.getElementById('form-error').textContent = 'Name is required.'; return; }
+  try {
+    await api('/api/projects', { method: 'POST', body: JSON.stringify({ name, description: desc }) });
+    toast('Project created!', 'success');
+    document.getElementById('home-form').innerHTML = '';
+    await renderHome();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
-async function setActiveProject(id) {
-    try {
-        await API('/api/projects/active', { method: 'POST', body: { projectId: id } });
-        App.activeProjectId = id;
-        renderProjects();
-        showToast('Project activated', 'success');
-    } catch (e) {
-        showToast('Failed to switch project', 'error');
-    }
+async function initDemo() {
+  try {
+    await api('/api/init', { method: 'POST' });
+    toast('Demo data loaded!', 'success');
+    await renderHome();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
-async function deleteProject(id) {
-    try {
-        await API(`/api/projects/${id}`, { method: 'DELETE' });
-        App.state = await API('/api/state');
-        syncState();
-        renderAll();
-        showToast('Project deleted', 'success');
-    } catch (e) {
-        showToast('Failed to delete project', 'error');
-    }
+// ═══════════════════════════════════════════════
+// OPEN PROJECT → WORKBENCH
+// ═══════════════════════════════════════════════
+async function openProject(id) {
+  try {
+    await api('/api/projects/active', { method: 'POST', body: JSON.stringify({ projectId: id }) });
+    const project = await api('/api/projects/' + id);
+    const fullState = await api('/api/state');
+    state.activeProjectId = id;
+    state.nodes = fullState.nodes || [];
+    state.edges = fullState.edges || [];
+    state.pivots = fullState.pivots || [];
+    state.proposals = (fullState.proposals || []).filter(p => p.status === 'pending');
+
+    document.getElementById('home').classList.remove('active');
+    document.getElementById('workbench').classList.add('active');
+    document.getElementById('proj-label').textContent = project.name;
+
+    initTabs();
+    renderGraph();
+    renderPivots();
+    renderDrawingTable();
+    addChatMsg('system', `Project loaded: ${project.name}\n${state.nodes.length} nodes, ${state.edges.length} edges\n\nUse commands or natural language in the chat.`);
+  } catch (e) {
+    toast('Error opening project: ' + e.message, 'error');
+  }
 }
 
-// --- Sources ---
-function renderSources() {
-    const container = document.getElementById('sourcesList');
-    const projectSources = App.activeProjectId 
-        ? App.sources.filter(s => s.projectId === App.activeProjectId)
-        : App.sources;
-    document.getElementById('sourceCount').textContent = projectSources.length;
+// ═══════════════════════════════════════════════
+// TAB SYSTEM
+// ═══════════════════════════════════════════════
+function initTabs() {
+  tabs = [
+    { id: 'drawing-table', label: 'Drawing Table', type: 'drawing-table', closeable: false },
+    { id: 'sources', label: 'Sources', type: 'sources', closeable: false },
+    { id: 'library', label: 'Library', type: 'library', closeable: false },
+    { id: 'proposals', label: 'Proposals', type: 'proposals', closeable: false },
+  ];
+  activeTabId = 'drawing-table';
+  renderTabBar();
+  renderAllPanels();
+}
 
-    if (projectSources.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state" style="padding:16px;">
-                <div class="empty-icon">&#x1F4C4;</div>
-                <h3>No sources</h3>
-                <p>Upload files to build your research library</p>
-            </div>`;
-        return;
+function renderTabBar() {
+  const bar = document.getElementById('tabs-bar');
+  bar.innerHTML = '';
+  tabs.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'tab' + (activeTabId === t.id ? ' active' : '');
+    el.innerHTML = `${t.label}${t.closeable ? `<span class="tab-close" onclick="event.stopPropagation();closeTab('${t.id}')">&times;</span>` : ''}`;
+    el.onclick = () => { activeTabId = t.id; renderTabBar(); showActivePanel(); };
+    bar.appendChild(el);
+  });
+}
+
+function closeTab(id) {
+  tabs = tabs.filter(t => t.id !== id);
+  document.querySelector(`.panel[data-tab="${id}"]`)?.remove();
+  if (activeTabId === id) activeTabId = tabs[0]?.id;
+  renderTabBar();
+  showActivePanel();
+}
+
+function showActivePanel() {
+  document.querySelectorAll('#panels .panel').forEach(p => {
+    p.classList.toggle('active', p.dataset.tab === activeTabId);
+  });
+}
+
+function renderAllPanels() {
+  const panels = document.getElementById('panels');
+  panels.innerHTML = '';
+  tabs.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'panel' + (activeTabId === t.id ? ' active' : '');
+    div.dataset.tab = t.id;
+    div.dataset.type = t.type;
+    div.innerHTML = getPanelContent(t);
+    panels.appendChild(div);
+  });
+  // Render specific panel data
+  renderDrawingTable();
+  renderSourcesPanel();
+}
+
+function getPanelContent(tab) {
+  switch (tab.type) {
+    case 'drawing-table':
+      return '<div class="dt-canvas" id="dt-canvas"><div id="dt-nodes"></div></div>';
+    case 'sources':
+      return `<div class="sources-toolbar">
+        <span style="font-size:13px;font-weight:600;color:var(--text-1)">Research Sources</span>
+        <div style="flex:1"></div>
+        <button class="upload-btn" onclick="openUploadModal()">+ Upload File</button>
+      </div><div id="sources-list"></div>`;
+    case 'library':
+      return `<div class="lib-toolbar">
+        <input class="lib-search" id="lib-query" placeholder="Search your library..." onkeydown="if(event.key==='Enter')searchLibrary()"/>
+        <button class="lib-search-btn" onclick="searchLibrary()">Search</button>
+      </div><div id="lib-results"><div class="lib-empty"><div class="lib-empty-icon">&#128270;</div><div class="empty-state-text">Search across your uploaded sources<br>using semantic similarity.</div><div class="empty-state-hint">Upload files first, then search here.</div></div></div>`;
+    case 'proposals':
+      return '<div id="proposals-list" style="flex:1;overflow-y:auto"></div>';
+    default:
+      return `<div class="custom-wrap"><h3>${esc(tab.label)}</h3><p>Tab created.</p></div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// DRAWING TABLE
+// ═══════════════════════════════════════════════
+function renderDrawingTable() {
+  const container = document.getElementById('dt-nodes');
+  if (!container) return;
+
+  if (state.nodes.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#128451;</div><div class="empty-state-text">No concepts yet.<br>Use <code>add node [name]</code> to add concepts.</div></div>';
+    return;
+  }
+
+  const edgesBySource = {};
+  state.edges.forEach(e => {
+    if (!edgesBySource[e.source]) edgesBySource[e.source] = [];
+    edgesBySource[e.source].push(e);
+  });
+
+  let html = '';
+  state.nodes.forEach(node => {
+    const conns = (edgesBySource[node.id] || []).map(e => {
+      const target = state.nodes.find(n => n.id === (e.target || e.to));
+      return target ? target.name || target.label : '?';
+    });
+    const statusClass = {
+      'established': 'status-established',
+      'developing': 'status-developing',
+      'open': 'status-open',
+      'concept': 'status-concept'
+    }[node.status] || 'status-concept';
+    const statusLabel = (node.status || 'concept').charAt(0).toUpperCase() + (node.status || 'concept').slice(1);
+
+    html += `<div class="dt-card" onclick="selectNode('${node.id}')">
+      <div class="dt-card-status ${statusClass}">${statusLabel}</div>
+      <div class="dt-card-name">${esc(node.name || node.label || 'Unnamed')}</div>
+      ${node.description ? `<div class="dt-card-desc">${esc(node.description)}</div>` : ''}
+      ${conns.length > 0 ? `<div class="dt-card-conns">${conns.map(c => `<span class="dt-card-conn">${esc(c)}</span>`).join('')}</div>` : ''}
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function selectNode(id) {
+  document.querySelectorAll('.dt-card').forEach(c => c.classList.remove('selected'));
+  event.currentTarget?.classList.add('selected');
+}
+
+// ═══════════════════════════════════════════════
+// SOURCES PANEL
+// ═══════════════════════════════════════════════
+async function renderSourcesPanel() {
+  const list = document.getElementById('sources-list');
+  if (!list || !state.activeProjectId) return;
+  try {
+    const sources = await api('/api/projects/' + state.activeProjectId + '/sources');
+    if (sources.length === 0) {
+      list.innerHTML = '<div class="empty-state" style="padding:40px"><div class="empty-state-icon">&#128218;</div><div class="empty-state-text">No sources uploaded yet.</div><div class="empty-state-hint">Click Upload to add research files.</div></div>';
+      return;
     }
-
-    container.innerHTML = projectSources.map(s => `
-        <div class="source-item">
-            <div class="source-icon">&#x1F4C4;</div>
-            <div class="source-info">
-                <div class="source-name">${escapeHtml(s.name)}</div>
-                <div class="source-meta">${s.type || 'file'}</div>
-            </div>
-            ${s.chunks ? `<span class="source-chunks">${s.chunks} chunks</span>` : ''}
-            <button class="sidebar-icon-btn" onclick="deleteSource('${s.id}')" title="Remove">&#x2715;</button>
-        </div>
-    `).join('');
+    let html = '';
+    sources.forEach(s => {
+      const ext = (s.filename || '').split('.').pop().toUpperCase();
+      const icon = { PDF: '&#128196;', TXT: '&#128196;', MD: '&#128196;', HTML: '&#127760;' }[ext] || '&#128196;';
+      html += `<div class="source-item">
+        <div class="source-icon">${icon}</div>
+        <div class="source-info"><div class="source-name">${esc(s.filename || s.name || 'File')}</div><div class="source-meta">${ext} &middot; Added ${(s.addedAt || s.createdAt || '').split('T')[0]}</div></div>
+        <button class="source-delete" onclick="deleteSource('${s.id}')">&times;</button>
+      </div>`;
+    });
+    list.innerHTML = html;
+  } catch (e) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-state-text">Error: ${esc(e.message)}</div></div>`;
+  }
 }
 
 async function deleteSource(id) {
-    try {
-        await API(`/api/sources/${id}`, { method: 'DELETE' });
-        App.state = await API('/api/state');
-        syncState();
-        renderAll();
-        showToast('Source removed', 'success');
-    } catch (e) {
-        showToast('Failed to remove source', 'error');
-    }
+  try {
+    await api('/api/sources/' + id, { method: 'DELETE' });
+    toast('Source removed', 'success');
+    renderSourcesPanel();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
-// --- Pivots ---
-function renderPivots() {
-    const container = document.getElementById('pivotsList');
-    document.getElementById('pivotCount').textContent = App.pivots.length;
+// ═══════════════════════════════════════════════
+// LIBRARY SEARCH
+// ═══════════════════════════════════════════════
+async function searchLibrary() {
+  const input = document.getElementById('lib-query');
+  const query = input.value.trim();
+  if (!query) { toast('Enter a search query', 'info'); return; }
 
-    if (App.pivots.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state" style="padding:16px;">
-                <div class="empty-icon">&#x1F527;</div>
-                <h3>No pivots</h3>
-                <p>Create pivots to track research directions</p>
-            </div>`;
-        return;
+  const results = document.getElementById('lib-results');
+  results.innerHTML = '<div class="loading-overlay"><div class="spinner"></div> Searching...</div>';
+
+  try {
+    const data = await api('/api/search', {
+      method: 'POST',
+      body: JSON.stringify({ query, topK: 8 })
+    });
+    if (!data.results || data.results.length === 0) {
+      results.innerHTML = '<div class="lib-empty"><div class="lib-empty-icon">&#128269;</div><div class="empty-state-text">No results found.</div><div class="empty-state-hint">Try different keywords or upload more sources.</div></div>';
+      return;
     }
+    let html = '';
+    data.results.forEach(r => {
+      html += `<div class="lib-card">
+        <div class="lib-card-source">${esc(r.source || r.metadata?.source || 'Unknown source')}</div>
+        <div class="lib-card-text">${esc(r.text || r.content || '')}</div>
+        <div class="lib-card-score">Score: ${(r.score || r.distance || 0).toFixed(3)}</div>
+      </div>`;
+    });
+    results.innerHTML = html;
+    toast(`Found ${data.results.length} results`, 'success');
+  } catch (e) {
+    results.innerHTML = `<div class="lib-empty"><div class="empty-state-text">Error: ${esc(e.message)}</div><div class="empty-state-hint">Make sure sources are uploaded and indexed.</div></div>`;
+  }
+}
 
-    container.innerHTML = App.pivots.map(p => `
-        <div class="pivot-item">
-            <span class="pivot-badge ${p.status}">${p.status}</span>
-            <span class="pivot-name">${escapeHtml(p.name)}</span>
-            <button class="sidebar-icon-btn" onclick="archivePivot('${p.id}')" title="Archive">&#x1F4BE;</button>
+// ═══════════════════════════════════════════════
+// PROPOSALS
+// ═══════════════════════════════════════════════
+async function renderProposals() {
+  const list = document.getElementById('proposals-list');
+  if (!list) return;
+  try {
+    const proposals = await api('/api/proposals');
+    state.proposals = proposals;
+    if (proposals.length === 0) {
+      list.innerHTML = '<div class="proposal-empty"><div class="empty-state" style="padding:40px"><div class="empty-state-icon">&#9998;</div><div class="empty-state-text">No pending proposals.</div><div class="empty-state-hint">Send a command to generate proposals.</div></div></div>';
+      return;
+    }
+    let html = '';
+    proposals.forEach(p => {
+      html += `<div class="proposal-item">
+        <div class="proposal-type ${p.type || 'analysis'}">${esc(p.type || 'analysis')}</div>
+        <div class="proposal-title">${esc(p.title || p.command || 'Proposal')}</div>
+        <div class="proposal-desc">${esc(p.rationale || p.description || '')}</div>
+        <div class="proposal-actions">
+          <button class="proposal-approve" onclick="approveProposal('${p.id}')">Approve</button>
+          <button class="proposal-reject" onclick="rejectProposal('${p.id}')">Reject</button>
         </div>
-    `).join('');
-}
-
-async function archivePivot(id) {
-    try {
-        await API(`/api/pivots/${id}/archive`, { method: 'POST' });
-        App.state = await API('/api/state');
-        syncState();
-        renderAll();
-        showToast('Pivot archived', 'success');
-    } catch (e) {
-        showToast('Failed to archive pivot', 'error');
-    }
-}
-
-// --- Section Toggle ---
-function toggleSection(section) {
-    const bodies = {
-        projects: 'projectsList',
-        sources: 'sourcesList',
-        pivots: 'pivotsList',
-    };
-    const toggles = {
-        projects: 'projectsToggle',
-        sources: 'sourcesToggle',
-        pivots: 'pivotsToggle',
-    };
-    const body = document.getElementById(bodies[section]);
-    const toggle = document.getElementById(toggles[section]);
-    body.classList.toggle('collapsed');
-    toggle.textContent = body.classList.contains('collapsed') ? '▶' : '▼';
-}
-
-// --- File Upload ---
-function handleDragOver(e) {
-    e.preventDefault();
-    document.getElementById('uploadZone').classList.add('dragover');
-}
-
-function handleDragLeave(e) {
-    e.preventDefault();
-    document.getElementById('uploadZone').classList.remove('dragover');
-}
-
-async function handleDrop(e) {
-    e.preventDefault();
-    document.getElementById('uploadZone').classList.remove('dragover');
-    const files = e.dataTransfer.files;
-    if (files.length > 0) await uploadFile(files[0]);
-}
-
-function handleFileSelect(e) {
-    const files = e.target.files;
-    if (files.length > 0) uploadFile(files[0]);
-    e.target.value = '';
-}
-
-async function uploadFile(file) {
-    const projectId = App.activeProjectId || 'default';
-    const progress = document.getElementById('uploadProgress');
-    const progressText = document.getElementById('uploadProgressText');
-    const chunksEl = document.getElementById('uploadChunks');
-
-    progress.classList.add('active');
-    progressText.textContent = `Uploading ${file.name}...`;
-    chunksEl.textContent = '';
-
-    try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('projectId', projectId);
-
-        progressText.textContent = `Processing ${file.name}...`;
-
-        const result = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData,
-        }).then(r => r.json());
-
-        if (result.error) {
-            showToast(result.error, 'error');
-        } else {
-            const chunks = result.processing?.chunks_processed || 0;
-            chunksEl.textContent = chunks > 0 ? `${chunks} chunks` : 'Indexed';
-            showToast(`"${file.name}" uploaded successfully`, 'success');
-
-            App.state = await API('/api/state');
-            syncState();
-            renderAll();
-        }
-    } catch (e) {
-        showToast('Upload failed', 'error');
-    } finally {
-        setTimeout(() => progress.classList.remove('active'), 2000);
-    }
-}
-
-// --- Command Interface ---
-async function sendCommand() {
-    const input = document.getElementById('commandInput');
-    const command = input.value.trim();
-    if (!command) return;
-
-    const sendBtn = document.getElementById('sendBtn');
-    sendBtn.disabled = true;
-    input.value = '';
-
-    try {
-        const proposal = await API('/api/command', {
-            method: 'POST',
-            body: {
-                command: command,
-                projectId: App.activeProjectId,
-            },
-        });
-
-        // Show quick response in bottom bar
-        showLastResponse(proposal);
-
-        // Refresh state
-        App.state = await API('/api/state');
-        syncState();
-        renderAll();
-
-        // Auto-select proposal in right panel
-        switchRightTab('proposals');
-        selectProposal(proposal.id);
-
-    } catch (e) {
-        showToast('Command failed', 'error');
-    } finally {
-        sendBtn.disabled = false;
-    }
-}
-
-function showLastResponse(proposal) {
-    const el = document.getElementById('lastResponse');
-    const dr = proposal.dialecticalResponse || {};
-    const source = dr.source || 'static';
-    el.innerHTML = `
-        <div style="margin-bottom:6px;">
-            <span class="text-accent text-xs font-mono">[${proposal.type.toUpperCase()}]</span>
-            <span style="color:var(--text-secondary);"> ${escapeHtml(proposal.command)}</span>
-        </div>
-        <div style="color:var(--text-secondary);line-height:1.5;font-size:12px;">
-            ${escapeHtml((dr.analysis || '').substring(0, 200))}${(dr.analysis || '').length > 200 ? '...' : ''}
-        </div>
-        <div class="text-xs text-muted" style="margin-top:4px;">via ${source}</div>
-    `;
-}
-
-// --- Command History ---
-async function loadCommandHistory() {
-    try {
-        App.commandHistory = await API('/api/command-history');
-        renderCommandHistory();
-    } catch (e) {
-        console.error('Failed to load command history:', e);
-    }
-}
-
-function renderCommandHistory() {
-    const container = document.getElementById('commandHistoryList');
-    const emptyEl = document.getElementById('historyEmpty');
-
-    if (App.commandHistory.length === 0) {
-        emptyEl.style.display = '';
-        return;
-    }
-    emptyEl.style.display = 'none';
-
-    container.innerHTML = App.commandHistory.slice().reverse().map(h => `
-        <div class="history-item" onclick="rerunCommand('${h.id}')">
-            <span class="history-text">${escapeHtml(h.text)}</span>
-            <span class="history-intent">${h.intent || 'cmd'}</span>
-            <span class="history-rerun" title="Rerun">&#x21BB;</span>
-        </div>
-    `).join('');
-}
-
-async function rerunCommand(historyId) {
-    try {
-        const proposal = await API(`/api/command-history/${historyId}/rerun`, { method: 'POST' });
-        showLastResponse(proposal);
-        App.state = await API('/api/state');
-        syncState();
-        renderAll();
-        switchRightTab('proposals');
-        showToast('Command rerun', 'info');
-    } catch (e) {
-        showToast('Rerun failed', 'error');
-    }
-}
-
-// --- Proposals ---
-function renderProposals() {
-    const container = document.getElementById('proposalsList');
-    const emptyEl = document.getElementById('proposalsEmpty');
-
-    if (App.proposals.length === 0) {
-        emptyEl.style.display = '';
-        container.innerHTML = '';
-        return;
-    }
-    emptyEl.style.display = 'none';
-
-    container.innerHTML = App.proposals.slice().reverse().map(p => {
-        const dr = p.dialecticalResponse || {};
-        const pressurePoints = dr.pressure_points || [];
-        const suggestions = dr.suggestions || [];
-
-        return `
-        <div class="proposal-card ${p.status} fade-in" id="proposal-${p.id}">
-            <div class="proposal-header">
-                <span class="proposal-type">${escapeHtml(p.type.replace(/_/g, ' '))}</span>
-                <span class="proposal-status ${p.status}">${p.status}</span>
-            </div>
-            <div class="proposal-command">${escapeHtml(p.command)}</div>
-            ${p.rationale ? `<div style="font-size:12px;color:var(--text-tertiary);margin-bottom:8px;">${escapeHtml(p.rationale)}</div>` : ''}
-            
-            <div class="dialectical-response">
-                ${dr.analysis ? `
-                <div class="dialectical-analysis">${escapeHtml(dr.analysis)}</div>
-                ` : ''}
-
-                ${pressurePoints.length > 0 ? `
-                <div class="dialectical-section">
-                    <h4 class="pressure"><span class="icon">&#x26A0;</span> Pressure Points</h4>
-                    <ul class="dialectical-list">
-                        ${pressurePoints.map(pp => `<li class="pressure">${escapeHtml(pp)}</li>`).join('')}
-                    </ul>
-                </div>
-                ` : ''}
-
-                ${suggestions.length > 0 ? `
-                <div class="dialectical-section">
-                    <h4 class="suggestions"><span class="icon">&#x1F4A1;</span> Suggestions</h4>
-                    <ul class="dialectical-list">
-                        ${suggestions.map(s => `<li class="suggestion">${escapeHtml(s)}</li>`).join('')}
-                    </ul>
-                </div>
-                ` : ''}
-
-                ${dr.source ? `
-                <div class="dialectical-section">
-                    <h4 class="source"><span class="icon">&#x1F310;</span> Source: ${escapeHtml(dr.source)}</h4>
-                </div>
-                ` : ''}
-            </div>
-
-            ${p.status === 'pending' ? `
-            <div class="proposal-actions">
-                <button class="btn btn-approve" onclick="approveProposal('${p.id}')">
-                    &#x2713; Approve
-                </button>
-                <button class="btn btn-reject" onclick="rejectProposal('${p.id}')">
-                    &#x2717; Reject
-                </button>
-            </div>
-            ` : ''}
-        </div>`;
-    }).join('');
-}
-
-function selectProposal(id) {
-    const el = document.getElementById(`proposal-${id}`);
-    if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        el.style.boxShadow = 'var(--shadow-glow)';
-        setTimeout(() => { el.style.boxShadow = ''; }, 2000);
-    }
+      </div>`;
+    });
+    list.innerHTML = html;
+  } catch (e) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-state-text">Error loading proposals</div></div>`;
+  }
 }
 
 async function approveProposal(id) {
-    try {
-        await API(`/api/proposals/${id}/approve`, { method: 'POST' });
-        App.state = await API('/api/state');
-        syncState();
-        renderAll();
-        drawGraph();
-        showToast('Proposal approved and committed', 'success');
-    } catch (e) {
-        showToast('Failed to approve', 'error');
-    }
+  try {
+    await api('/api/proposals/' + id + '/approve', { method: 'POST' });
+    toast('Proposal approved!', 'success');
+    await refreshProjectData();
+    renderProposals();
+    renderDrawingTable();
+    renderGraph();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
 async function rejectProposal(id) {
-    try {
-        await API(`/api/proposals/${id}/reject`, { method: 'POST' });
-        App.state = await API('/api/state');
-        syncState();
-        renderAll();
-        showToast('Proposal rejected', 'info');
-    } catch (e) {
-        showToast('Failed to reject', 'error');
-    }
+  try {
+    await api('/api/proposals/' + id + '/reject', { method: 'POST' });
+    toast('Proposal rejected', 'info');
+    renderProposals();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
-// --- Right Panel Tabs ---
-function switchRightTab(tab) {
-    document.getElementById('proposalsView').classList.toggle('hidden', tab !== 'proposals');
-    document.getElementById('nodeView').classList.toggle('hidden', tab !== 'node');
-    document.getElementById('searchView').classList.toggle('hidden', tab !== 'search');
+// ═══════════════════════════════════════════════
+// CONCEPT GRAPH (Canvas)
+// ═══════════════════════════════════════════════
+function renderGraph() {
+  const canvas = document.getElementById('graph-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * 2;
+  canvas.height = rect.height * 2;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.scale(2, 2);
+  const W = rect.width;
+  const H = rect.height;
 
-    document.getElementById('tabProposals').classList.toggle('active', tab === 'proposals');
-    document.getElementById('tabNode').classList.toggle('active', tab === 'node');
-    document.getElementById('tabSearch').classList.toggle('active', tab === 'search');
-}
+  // Position nodes in a circle/grid if no positions
+  const colorMap = {
+    'established': '#22c55e', 'developing': '#06b6d4',
+    'open': '#f59e0b', 'concept': '#a855f7'
+  };
 
-// --- Search ---
-async function performSearch() {
-    const input = document.getElementById('searchInput');
-    const query = input.value.trim();
-    if (!query) return;
+  graphNodes = state.nodes.map((n, i) => {
+    if (!n._x) n._x = 40 + (i % 4) * (W - 80) / 3;
+    if (!n._y) n._y = 40 + Math.floor(i / 4) * 80;
+    return { ...n, _x: Math.min(Math.max(n._x, 20), W - 20), _y: Math.min(Math.max(n._y, 20), H - 20) };
+  });
 
-    const container = document.getElementById('searchResults');
-    container.innerHTML = '<div class="loading-overlay active" style="position:relative;border-radius:var(--radius-md);min-height:100px;"><div class="loading-spinner"></div></div>';
+  graphEdges = state.edges;
 
-    try {
-        const result = await API('/api/search', {
-            method: 'POST',
-            body: { query, projectId: App.activeProjectId },
-        });
+  document.getElementById('node-count').textContent = state.nodes.length;
 
-        if (result.error || !result.results || result.results.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">&#x1F50D;</div>
-                    <h3>No results found</h3>
-                    <p>Try a different query or upload more sources</p>
-                </div>`;
-            return;
-        }
-
-        container.innerHTML = result.results.map(r => `
-            <div class="search-result">
-                <div class="search-result-header">
-                    <span class="search-result-source">${escapeHtml(r.source || 'Unknown')}</span>
-                    ${r.score ? `<span class="search-result-score">${(r.score * 100).toFixed(0)}%</span>` : ''}
-                </div>
-                <div class="search-result-text">${escapeHtml(r.text || r.content || JSON.stringify(r).substring(0, 300))}</div>
-            </div>
-        `).join('');
-    } catch (e) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon">&#x26A0;</div>
-                <h3>Search failed</h3>
-                <p>${escapeHtml(e.message || 'An error occurred')}</p>
-            </div>`;
-    }
-}
-
-// --- Canvas / Graph ---
-function initCanvas() {
-    App.canvas = document.getElementById('graphCanvas');
-    App.ctx = App.canvas.getContext('2d');
-    resizeCanvas();
-
-    // Set up initial node positions in a circle
-    layoutNodes();
-
-    // Mouse events
-    App.canvas.addEventListener('mousedown', onCanvasMouseDown);
-    App.canvas.addEventListener('mousemove', onCanvasMouseMove);
-    App.canvas.addEventListener('mouseup', onCanvasMouseUp);
-    App.canvas.addEventListener('mouseleave', onCanvasMouseLeave);
-    App.canvas.addEventListener('wheel', onCanvasWheel, { passive: false });
-
-    // Touch events for mobile
-    App.canvas.addEventListener('touchstart', onCanvasTouchStart, { passive: false });
-    App.canvas.addEventListener('touchmove', onCanvasTouchMove, { passive: false });
-    App.canvas.addEventListener('touchend', onCanvasTouchEnd);
-}
-
-function resizeCanvas() {
-    const container = document.getElementById('canvasContainer');
-    const rect = container.getBoundingClientRect();
-    App.canvasWidth = rect.width;
-    App.canvasHeight = rect.height;
-    App.canvas.width = App.canvasWidth * App.dpr;
-    App.canvas.height = App.canvasHeight * App.dpr;
-    App.canvas.style.width = App.canvasWidth + 'px';
-    App.canvas.style.height = App.canvasHeight + 'px';
-    App.ctx.setTransform(App.dpr, 0, 0, App.dpr, 0, 0);
-}
-
-function layoutNodes() {
-    const cx = App.canvasWidth / 2;
-    const cy = App.canvasHeight / 2;
-    const count = App.nodes.length;
-    const radius = Math.min(cx, cy) * 0.5;
-
-    App.nodes.forEach((node, i) => {
-        // Keep existing positions if available
-        if (!App.nodePositions[node.id]) {
-            if (count === 1) {
-                App.nodePositions[node.id] = { x: cx, y: cy };
-            } else {
-                const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
-                App.nodePositions[node.id] = {
-                    x: cx + Math.cos(angle) * radius,
-                    y: cy + Math.sin(angle) * radius,
-                };
-            }
-        }
-    });
-}
-
-function updateCanvasStats() {
-    document.getElementById('nodeCount').textContent = App.nodes.length;
-    document.getElementById('edgeCount').textContent = App.edges.length;
-}
-
-function screenToWorld(sx, sy) {
-    return {
-        x: (sx - App.camera.x) / App.camera.zoom,
-        y: (sy - App.camera.y) / App.camera.zoom,
-    };
-}
-
-function worldToScreen(wx, wy) {
-    return {
-        x: wx * App.camera.zoom + App.camera.x,
-        y: wy * App.camera.zoom + App.camera.y,
-    };
-}
-
-function getNodeAt(sx, sy) {
-    const world = screenToWorld(sx, sy);
-    const nodeRadius = 30;
-
-    for (let i = App.nodes.length - 1; i >= 0; i--) {
-        const node = App.nodes[i];
-        const pos = App.nodePositions[node.id];
-        if (!pos) continue;
-
-        const dx = world.x - pos.x;
-        const dy = world.y - pos.y;
-        if (dx * dx + dy * dy <= nodeRadius * nodeRadius) {
-            return node;
-        }
-    }
-    return null;
-}
-
-// --- Canvas Drawing ---
-function drawGraph() {
-    const ctx = App.ctx;
-    const w = App.canvasWidth;
-    const h = App.canvasHeight;
-
-    // Clear
-    ctx.fillStyle = '#0a0a0f';
-    ctx.fillRect(0, 0, w, h);
-
-    // Draw grid
-    drawGrid(ctx, w, h);
-
-    ctx.save();
-    ctx.translate(App.camera.x, App.camera.y);
-    ctx.scale(App.camera.zoom, App.camera.zoom);
-
+  // Animation loop
+  if (graphAnimId) cancelAnimationFrame(graphAnimId);
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
     // Draw edges
-    drawEdges(ctx);
-
+    graphEdges.forEach(e => {
+      const a = graphNodes.find(n => n.id === (e.source || e.from));
+      const b = graphNodes.find(n => n.id === (e.target || e.to));
+      if (!a || !b) return;
+      ctx.beginPath();
+      ctx.moveTo(a._x, a._y);
+      ctx.lineTo(b._x, b._y);
+      ctx.strokeStyle = 'rgba(99,102,241,0.2)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
     // Draw nodes
-    drawNodes(ctx);
-
-    ctx.restore();
-}
-
-function drawGrid(ctx, w, h) {
-    const spacing = 40 * App.camera.zoom;
-    const offsetX = App.camera.x % spacing;
-    const offsetY = App.camera.y % spacing;
-
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let x = offsetX; x < w; x += spacing) {
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, h);
-    }
-    for (let y = offsetY; y < h; y += spacing) {
-        ctx.moveTo(0, y);
-        ctx.lineTo(w, y);
-    }
-    ctx.stroke();
-}
-
-function drawEdges(ctx) {
-    App.edges.forEach(edge => {
-        const fromPos = App.nodePositions[edge.source || edge.from];
-        const toPos = App.nodePositions[edge.target || edge.to];
-        if (!fromPos || !toPos) return;
-
-        const weight = edge.weight || 0.5;
-        const type = edge.type || 'related';
-
-        ctx.beginPath();
-        ctx.moveTo(fromPos.x, fromPos.y);
-        ctx.lineTo(toPos.x, toPos.y);
-
-        if (type === 'semantic') {
-            ctx.strokeStyle = `rgba(124, 92, 252, ${0.15 + weight * 0.35})`;
-            ctx.lineWidth = 1.5 + weight;
-        } else {
-            ctx.strokeStyle = `rgba(0, 212, 170, ${0.08 + weight * 0.2})`;
-            ctx.lineWidth = 1 + weight * 0.5;
-        }
-
-        ctx.stroke();
+    graphNodes.forEach(n => {
+      const r = n.status === 'open' ? 7 : 5;
+      const color = colorMap[n.status] || colorMap.concept;
+      // Glow
+      ctx.beginPath();
+      ctx.arc(n._x, n._y, r + 4, 0, Math.PI * 2);
+      ctx.fillStyle = color + '22';
+      ctx.fill();
+      // Node
+      ctx.beginPath();
+      ctx.arc(n._x, n._y, r, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      // Label
+      ctx.fillStyle = '#b0b0c0';
+      ctx.font = '10px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      const label = (n.name || n.label || '').length > 16 ? (n.name || n.label || '').slice(0, 14) + '..' : (n.name || n.label || '');
+      ctx.fillText(label, n._x, n._y + r + 14);
     });
+    graphAnimId = requestAnimationFrame(draw);
+  }
+  draw();
+
+  // Mouse interaction for dragging
+  canvas.onmousedown = (e) => {
+    const cr = canvas.getBoundingClientRect();
+    const mx = e.clientX - cr.left;
+    const my = e.clientY - cr.top;
+    for (let i = graphNodes.length - 1; i >= 0; i--) {
+      const n = graphNodes[i];
+      const dx = mx - n._x, dy = my - n._y;
+      if (dx * dx + dy * dy < 144) { dragNode = n; return; }
+    }
+    canvasDrag = { x: mx, y: my };
+  };
+  canvas.onmousemove = (e) => {
+    if (dragNode) {
+      const cr = canvas.getBoundingClientRect();
+      dragNode._x = e.clientX - cr.left;
+      dragNode._y = e.clientY - cr.top;
+    }
+  };
+  canvas.onmouseup = () => { dragNode = null; canvasDrag = null; };
 }
 
-function drawNodes(ctx) {
-    App.nodes.forEach(node => {
-        const pos = App.nodePositions[node.id];
-        if (!pos) return;
+// ═══════════════════════════════════════════════
+// PIVOTS
+// ═══════════════════════════════════════════════
+function renderPivots() {
+  const list = document.getElementById('pivots-list');
+  if (!list) return;
+  const pivots = state.pivots || [];
+  document.getElementById('pivot-count').textContent = pivots.length;
+  if (pivots.length === 0) {
+    list.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-3);font-size:12px">No open pivots</div>';
+    return;
+  }
+  let html = '';
+  pivots.forEach(p => {
+    html += `<div class="pivot-item" onclick="addChatMsg('system','Pivot: ${esc(p.name || p.concept || 'Unnamed')}')">
+      <div class="pivot-item-label">${esc(p.name || p.concept || 'Unnamed')}</div>
+      <div class="pivot-item-desc">${esc(p.description || p.reason || '')}</div>
+    </div>`;
+  });
+  list.innerHTML = html;
+}
 
-        const isSelected = App.selectedNodeId === node.id;
-        const isHovered = App.hoveredNode && App.hoveredNode.id === node.id;
-        const status = node.status || 'concept';
+// ═══════════════════════════════════════════════
+// AGENT CHAT
+// ═══════════════════════════════════════════════
+function setMode(mode, btn) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const input = document.getElementById('chat-input');
+  const placeholders = {
+    think: 'Type a thought, command, or question...',
+    command: 'Enter command: add node, search, analyze...',
+    pivot: 'Describe a research pivot to explore...',
+    bridge: 'Two concepts to bridge: bridge X and Y...',
+    challenge: 'Challenge a theory — I will push back...'
+  };
+  input.placeholder = placeholders[mode] || placeholders.think;
+}
 
-        let color, glowColor;
-        switch (status) {
-            case 'active':
-                color = '#22c55e';
-                glowColor = 'rgba(34, 197, 94, 0.3)';
-                break;
-            case 'archived':
-                color = '#55556a';
-                glowColor = 'rgba(85, 85, 106, 0.2)';
-                break;
-            default:
-                color = '#7c5cfc';
-                glowColor = 'rgba(124, 92, 252, 0.3)';
-        }
+function handleInputKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
 
-        const radius = 24;
-        const fontSize = 10;
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
 
-        // Glow effect
-        if (isSelected || isHovered) {
-            ctx.beginPath();
-            ctx.arc(pos.x, pos.y, radius + 8, 0, Math.PI * 2);
-            ctx.fillStyle = isSelected ? 'rgba(124, 92, 252, 0.12)' : 'rgba(255, 255, 255, 0.04)';
-            ctx.fill();
-        }
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  input.value = '';
 
-        // Outer glow
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, radius + 3, 0, Math.PI * 2);
-        ctx.fillStyle = glowColor;
-        ctx.fill();
+  addChatMsg('user', text);
 
-        // Main circle
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.fill();
+  // Check if it's a direct command
+  const cmd = parseLocalCommand(text);
+  if (cmd) {
+    btn.disabled = false;
+    return;
+  }
 
-        // Inner highlight
-        const gradient = ctx.createRadialGradient(pos.x - 5, pos.y - 5, 0, pos.x, pos.y, radius);
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = gradient;
-        ctx.fill();
+  // Show typing
+  const typing = addTypingIndicator();
 
-        // Border
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = isSelected ? '#fff' : 'rgba(255, 255, 255, 0.15)';
-        ctx.lineWidth = isSelected ? 2 : 1;
-        ctx.stroke();
-
-        // Initials / Icon
-        const initials = node.name
-            ? node.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
-            : '?';
-        ctx.fillStyle = '#fff';
-        ctx.font = `bold 12px ${getComputedStyle(document.body).getPropertyValue('--font-sans').trim() || 'Inter, sans-serif'}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(initials, pos.x, pos.y);
-
-        // Label below
-        ctx.fillStyle = isSelected ? '#fff' : 'rgba(232, 232, 240, 0.8)';
-        ctx.font = `500 ${fontSize}px ${getComputedStyle(document.body).getPropertyValue('--font-sans').trim() || 'Inter, sans-serif'}`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-
-        // Word wrap label
-        const maxWidth = 80;
-        const words = (node.name || '').split(' ');
-        let lines = [];
-        let currentLine = '';
-        words.forEach(word => {
-            const testLine = currentLine ? currentLine + ' ' + word : word;
-            if (ctx.measureText(testLine).width > maxWidth && currentLine) {
-                lines.push(currentLine);
-                currentLine = word;
-            } else {
-                currentLine = testLine;
-            }
-        });
-        if (currentLine) lines.push(currentLine);
-        if (lines.length > 2) lines = lines.slice(0, 2);
-
-        lines.forEach((line, i) => {
-            ctx.fillText(line, pos.x, pos.y + radius + 6 + i * (fontSize + 3));
-        });
+  try {
+    // Send to backend command endpoint
+    const data = await api('/api/command', {
+      method: 'POST',
+      body: JSON.stringify({
+        command: text,
+        context: { mode: currentMode },
+        projectId: state.activeProjectId
+      })
     });
-}
 
-function startRenderLoop() {
-    function loop() {
-        drawGraph();
-        App.animFrame = requestAnimationFrame(loop);
-    }
-    loop();
-}
+    typing.remove();
+    addChatMsg('cmd', data.type || 'processed');
 
-// --- Canvas Interaction ---
-function onCanvasMouseDown(e) {
-    const rect = App.canvas.getBoundingClientRect();
-    const sx = e.clientX - rect.left;
-    const sy = e.clientY - rect.top;
-    const node = getNodeAt(sx, sy);
-
-    if (App.canvasMode === 'pan' || (e.button === 1) || (e.button === 0 && e.shiftKey)) {
-        // Start panning
-        App.isPanning = true;
-        App.panStart = { x: e.clientX, y: e.clientY };
-        App.cameraStart = { x: App.camera.x, y: App.camera.y };
-        App.canvas.style.cursor = 'grabbing';
-        return;
-    }
-
-    if (node) {
-        // Start dragging
-        App.draggingNode = node;
-        const pos = App.nodePositions[node.id];
-        const world = screenToWorld(sx, sy);
-        App.dragOffset = { x: world.x - pos.x, y: world.y - pos.y };
-        App.canvas.style.cursor = 'grabbing';
+    // Show the response — dialecticalResponse is an object {analysis, pressure_points, suggestions}
+    if (data.dialecticalResponse) {
+      const dr = data.dialecticalResponse;
+      let resp = '';
+      if (typeof dr === 'string') {
+        resp = dr;
+      } else {
+        resp = dr.analysis || '';
+        if (dr.pressure_points && dr.pressure_points.length > 0) {
+          resp += '\n\nPressure Points:\n' + dr.pressure_points.map(p => '- ' + p).join('\n');
+        }
+        if (dr.suggestions && dr.suggestions.length > 0) {
+          resp += '\n\nSuggestions:\n' + dr.suggestions.map(s => '- ' + s).join('\n');
+        }
+      }
+      addChatMsg('agent', resp || data.rationale || 'Command processed.');
+    } else if (data.analysis) {
+      let resp = data.analysis;
+      if (data.pressure_points && data.pressure_points.length > 0) {
+        resp += '\n\nPressure points:\n' + data.pressure_points.map(p => '- ' + p).join('\n');
+      }
+      addChatMsg('agent', resp);
     } else {
-        // Deselect
-        App.selectedNodeId = null;
-        renderNodeDetail();
-        // Start panning if no node hit
-        App.isPanning = true;
-        App.panStart = { x: e.clientX, y: e.clientY };
-        App.cameraStart = { x: App.camera.x, y: App.camera.y };
-        App.canvas.style.cursor = 'grabbing';
-    }
-}
-
-function onCanvasMouseMove(e) {
-    const rect = App.canvas.getBoundingClientRect();
-    const sx = e.clientX - rect.left;
-    const sy = e.clientY - rect.top;
-    App.mouseX = sx;
-    App.mouseY = sy;
-
-    if (App.isPanning) {
-        const dx = e.clientX - App.panStart.x;
-        const dy = e.clientY - App.panStart.y;
-        App.camera.x = App.cameraStart.x + dx;
-        App.camera.y = App.cameraStart.y + dy;
-        return;
+      addChatMsg('agent', data.rationale || 'Command processed.');
     }
 
-    if (App.draggingNode) {
-        const world = screenToWorld(sx, sy);
-        App.nodePositions[App.draggingNode.id] = {
-            x: world.x - App.dragOffset.x,
-            y: world.y - App.dragOffset.y,
-        };
-        return;
+    // Refresh data
+    await refreshProjectData();
+    renderDrawingTable();
+    renderGraph();
+    renderPivots();
+    renderProposals();
+
+    // Auto-switch to proposals tab if new proposal
+    if (data.status === 'pending' && data.type) {
+      const hasProposal = tabs.find(t => t.id === 'proposals');
+      if (hasProposal) {
+        activeTabId = 'proposals';
+        renderTabBar();
+        showActivePanel();
+        renderProposals();
+      }
     }
-
-    // Hover detection
-    const node = getNodeAt(sx, sy);
-    App.hoveredNode = node;
-
-    const tooltip = document.getElementById('canvasTooltip');
-    if (node) {
-        App.canvas.style.cursor = 'pointer';
-        tooltip.innerHTML = `<strong>${escapeHtml(node.name)}</strong><br><span class="text-xs text-muted">${node.id} · ${node.status}</span>`;
-        tooltip.style.left = (sx + 16) + 'px';
-        tooltip.style.top = (sy - 10) + 'px';
-        tooltip.classList.add('visible');
-    } else {
-        App.canvas.style.cursor = App.canvasMode === 'pan' ? 'grab' : 'default';
-        tooltip.classList.remove('visible');
-    }
+  } catch (e) {
+    typing.remove();
+    addChatMsg('system', 'Error: ' + e.message);
+  }
+  btn.disabled = false;
 }
 
-function onCanvasMouseUp(e) {
-    if (App.draggingNode) {
-        // Click on node (select it)
-        const rect = App.canvas.getBoundingClientRect();
-        const sx = e.clientX - rect.left;
-        const sy = e.clientY - rect.top;
-        const node = getNodeAt(sx, sy);
+function parseLocalCommand(text) {
+  const lower = text.toLowerCase();
 
-        if (node && node.id === App.draggingNode.id) {
-            App.selectedNodeId = node.id;
-            showNodeDetail(node);
-            switchRightTab('node');
-        }
+  // "add node [name]"
+  let match = lower.match(/add\s+node\s+(.+)/);
+  if (match) {
+    addChatMsg('cmd', 'add_node: ' + match[1].trim());
+    sendCommand(text);
+    return true;
+  }
 
-        App.draggingNode = null;
-        App.canvas.style.cursor = 'default';
-    }
+  // "search [query]"
+  match = lower.match(/^search\s+(.+)/);
+  if (match) {
+    addChatMsg('cmd', 'search: ' + match[1].trim());
+    // Open library tab and search
+    activeTabId = 'library';
+    renderTabBar();
+    showActivePanel();
+    setTimeout(() => {
+      const qi = document.getElementById('lib-query');
+      if (qi) { qi.value = match[1].trim(); searchLibrary(); }
+    }, 200);
+    return true;
+  }
 
-    if (App.isPanning) {
-        App.isPanning = false;
-        App.canvas.style.cursor = App.canvasMode === 'pan' ? 'grab' : 'default';
-    }
+  // "analyze [topic]"
+  match = lower.match(/^analyze\s+(.+)/);
+  if (match) {
+    addChatMsg('cmd', 'analyze: ' + match[1].trim());
+    doAnalysis(match[1].trim());
+    return true;
+  }
+
+  return false;
 }
 
-function onCanvasMouseLeave() {
-    App.hoveredNode = null;
-    App.draggingNode = null;
-    App.isPanning = false;
-    document.getElementById('canvasTooltip').classList.remove('visible');
-}
-
-function onCanvasWheel(e) {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    zoomAt(delta, e.clientX, e.clientY);
-}
-
-function zoomAt(factor, clientX, clientY) {
-    const rect = App.canvas.getBoundingClientRect();
-    const sx = clientX - rect.left;
-    const sy = clientY - rect.top;
-
-    const oldZoom = App.camera.zoom;
-    App.camera.zoom = Math.max(0.1, Math.min(5, App.camera.zoom * factor));
-
-    // Zoom towards mouse position
-    const zoomRatio = App.camera.zoom / oldZoom;
-    App.camera.x = sx - (sx - App.camera.x) * zoomRatio;
-    App.camera.y = sy - (sy - App.camera.y) * zoomRatio;
-}
-
-function zoomCanvas(factor) {
-    zoomAt(factor, App.canvasWidth / 2, App.canvasHeight / 2);
-}
-
-function fitGraph() {
-    if (App.nodes.length === 0) return;
-
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    App.nodes.forEach(node => {
-        const pos = App.nodePositions[node.id];
-        if (!pos) return;
-        minX = Math.min(minX, pos.x);
-        minY = Math.min(minY, pos.y);
-        maxX = Math.max(maxX, pos.x);
-        maxY = Math.max(maxY, pos.y);
+async function sendCommand(text) {
+  const typing = addTypingIndicator();
+  try {
+    const data = await api('/api/command', {
+      method: 'POST',
+      body: JSON.stringify({ command: text, projectId: state.activeProjectId })
     });
-
-    const padding = 80;
-    const graphW = maxX - minX + padding * 2;
-    const graphH = maxY - minY + padding * 2;
-    const zoomX = App.canvasWidth / graphW;
-    const zoomY = App.canvasHeight / graphH;
-    App.camera.zoom = Math.min(zoomX, zoomY, 2);
-
-    const centerGraphX = (minX + maxX) / 2;
-    const centerGraphY = (minY + maxY) / 2;
-    App.camera.x = App.canvasWidth / 2 - centerGraphX * App.camera.zoom;
-    App.camera.y = App.canvasHeight / 2 - centerGraphY * App.camera.zoom;
-}
-
-// Touch support
-function onCanvasTouchStart(e) {
-    e.preventDefault();
-    if (e.touches.length === 1) {
-        const touch = e.touches[0];
-        const rect = App.canvas.getBoundingClientRect();
-        const sx = touch.clientX - rect.left;
-        const sy = touch.clientY - rect.top;
-        const node = getNodeAt(sx, sy);
-
-        if (node) {
-            App.draggingNode = node;
-            const pos = App.nodePositions[node.id];
-            const world = screenToWorld(sx, sy);
-            App.dragOffset = { x: world.x - pos.x, y: world.y - pos.y };
-        } else {
-            App.isPanning = true;
-            App.panStart = { x: touch.clientX, y: touch.clientY };
-            App.cameraStart = { x: App.camera.x, y: App.camera.y };
-        }
+    typing.remove();
+    // Handle dialecticalResponse (object or string)
+    let agentResp = data.rationale || 'Command processed.';
+    if (data.dialecticalResponse) {
+      const dr = data.dialecticalResponse;
+      agentResp = typeof dr === 'string' ? dr : (dr.analysis || data.rationale || 'Command processed.');
     }
+    addChatMsg('agent', agentResp);
+    await refreshProjectData();
+    renderDrawingTable();
+    renderGraph();
+    renderPivots();
+    renderProposals();
+  } catch (e) {
+    typing.remove();
+    addChatMsg('system', 'Error: ' + e.message);
+  }
 }
 
-function onCanvasTouchMove(e) {
-    e.preventDefault();
-    if (e.touches.length === 1) {
-        const touch = e.touches[0];
-        const rect = App.canvas.getBoundingClientRect();
-        const sx = touch.clientX - rect.left;
-        const sy = touch.clientY - rect.top;
+async function doAnalysis(query) {
+  const typing = addTypingIndicator();
+  try {
+    const data = await api('/api/analyze', {
+      method: 'POST',
+      body: JSON.stringify({ query, projectId: state.activeProjectId })
+    });
+    typing.remove();
 
-        if (App.draggingNode) {
-            const world = screenToWorld(sx, sy);
-            App.nodePositions[App.draggingNode.id] = {
-                x: world.x - App.dragOffset.x,
-                y: world.y - App.dragOffset.y,
-            };
-        } else if (App.isPanning) {
-            const dx = touch.clientX - App.panStart.x;
-            const dy = touch.clientY - App.panStart.y;
-            App.camera.x = App.cameraStart.x + dx;
-            App.camera.y = App.cameraStart.y + dy;
-        }
+    // Create analysis tab
+    const tabId = 'analysis-' + Date.now();
+    tabs.push({ id: tabId, label: 'Analysis', type: 'analysis', closeable: true });
+    renderTabBar();
+    const panels = document.getElementById('panels');
+    const div = document.createElement('div');
+    div.className = 'panel';
+    div.dataset.tab = tabId;
+    div.dataset.type = 'analysis';
+    let html = '<div class="analysis-wrap">';
+    if (data.analysis) {
+      html += '<div class="analysis-section"><div class="analysis-section-title"><span class="icon">&#128161;</span> Analysis</div><div class="analysis-text">' + esc(data.analysis) + '</div></div>';
     }
-}
-
-function onCanvasTouchEnd(e) {
-    if (App.draggingNode) {
-        // Select on tap
-        if (e.changedTouches.length === 1) {
-            const touch = e.changedTouches[0];
-            const rect = App.canvas.getBoundingClientRect();
-            const sx = touch.clientX - rect.left;
-            const sy = touch.clientY - rect.top;
-            const node = getNodeAt(sx, sy);
-            if (node && node.id === App.draggingNode.id) {
-                App.selectedNodeId = node.id;
-                showNodeDetail(node);
-                switchRightTab('node');
-            }
-        }
-        App.draggingNode = null;
+    if (data.pressure_points && data.pressure_points.length) {
+      html += '<div class="analysis-section"><div class="analysis-section-title"><span class="icon">&#9888;</span> Pressure Points</div>';
+      data.pressure_points.forEach(p => { html += '<div class="analysis-card"><div class="analysis-card-body">' + esc(p) + '</div></div>'; });
+      html += '</div>';
     }
-    App.isPanning = false;
+    if (data.suggestions && data.suggestions.length) {
+      html += '<div class="analysis-section"><div class="analysis-section-title"><span class="icon">&#128161;</span> Suggestions</div>';
+      data.suggestions.forEach(s => { html += '<div class="analysis-card"><div class="analysis-card-body">' + esc(s) + '</div></div>'; });
+      html += '</div>';
+    }
+    html += '</div>';
+    div.innerHTML = html;
+    panels.appendChild(div);
+    activeTabId = tabId;
+    renderTabBar();
+    showActivePanel();
+  } catch (e) {
+    typing.remove();
+    addChatMsg('system', 'Analysis error: ' + e.message);
+  }
 }
 
-// --- Canvas Mode ---
-function setCanvasMode(mode) {
-    App.canvasMode = mode;
-    document.getElementById('btnSelect').classList.toggle('active', mode === 'select');
-    document.getElementById('btnPan').classList.toggle('active', mode === 'pan');
-    App.canvas.style.cursor = mode === 'pan' ? 'grab' : 'default';
+function addChatMsg(role, text) {
+  const c = document.getElementById('chat-msgs');
+  const d = document.createElement('div');
+  d.className = 'msg msg-' + role;
+  const labels = { user: 'You', agent: 'Jarvis', system: 'System', cmd: 'Command' };
+  d.innerHTML = `<div class="msg-header"><span class="msg-role">${labels[role] || role}</span></div><div class="msg-bubble">${esc(text).replace(/\n/g, '<br>')}</div>`;
+  c.appendChild(d);
+  c.scrollTop = c.scrollHeight;
+  document.getElementById('msg-count').textContent = c.children.length;
+  return d;
 }
 
-// --- Node Detail ---
-async function showNodeDetail(node) {
-    const emptyEl = document.getElementById('nodeEmpty');
-    const detailEl = document.getElementById('nodeDetail');
-    emptyEl.classList.add('hidden');
-    detailEl.classList.remove('hidden');
+function addTypingIndicator() {
+  const c = document.getElementById('chat-msgs');
+  const d = document.createElement('div');
+  d.className = 'msg msg-agent';
+  d.innerHTML = '<div class="msg-header"><span class="msg-role">Jarvis</span></div><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+  c.appendChild(d);
+  c.scrollTop = c.scrollHeight;
+  return d;
+}
 
-    let connections = [];
+// ═══════════════════════════════════════════════
+// FILE UPLOAD
+// ═══════════════════════════════════════════════
+function openUploadModal() { document.getElementById('upload-modal').classList.add('show'); }
+function closeUploadModal() {
+  document.getElementById('upload-modal').classList.remove('show');
+  document.getElementById('upload-progress').style.display = 'none';
+  document.getElementById('file-input').value = '';
+}
+
+// Drag & drop
+const uploadZone = document.getElementById('upload-zone');
+if (uploadZone) {
+  uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+  uploadZone.addEventListener('drop', (e) => { e.preventDefault(); uploadZone.classList.remove('dragover'); handleFileSelect(e.dataTransfer.files); });
+}
+
+async function handleFileSelect(files) {
+  if (!files || files.length === 0) return;
+  const progressDiv = document.getElementById('upload-progress');
+  const fill = document.getElementById('upload-fill');
+  const info = document.getElementById('upload-info');
+  progressDiv.style.display = 'block';
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    info.textContent = `Uploading ${file.name}... (${i + 1}/${files.length})`;
+    fill.style.width = ((i + 1) / files.length * 100) + '%';
+
     try {
-        const details = await API(`/api/nodes/${node.id}`);
-        connections = details.connected || [];
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('projectId', state.activeProjectId || 'default');
+
+      const res = await fetch(API + '/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (res.ok) {
+        toast(`Uploaded: ${file.name}`, 'success');
+      } else {
+        toast(`Upload failed: ${data.error}`, 'error');
+      }
     } catch (e) {
-        // Fallback: find edges manually
-        App.edges.forEach(edge => {
-            if (edge.source === node.id || edge.from === node.id) {
-                const targetId = edge.target || edge.to;
-                const target = App.nodes.find(n => n.id === targetId);
-                if (target) connections.push({ node: target, edgeType: edge.type });
-            } else if (edge.target === node.id || edge.to === node.id) {
-                const sourceId = edge.source || edge.from;
-                const target = App.nodes.find(n => n.id === sourceId);
-                if (target) connections.push({ node: target, edgeType: edge.type });
-            }
-        });
+      toast(`Upload error: ${e.message}`, 'error');
     }
+  }
 
-    const status = node.status || 'concept';
-    const initials = node.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-
-    detailEl.innerHTML = `
-        <div class="node-detail-header">
-            <div class="node-detail-avatar status-${status}">${initials}</div>
-            <div class="node-detail-info">
-                <h3>${escapeHtml(node.name)}</h3>
-                <span class="node-id">${node.id}</span>
-            </div>
-        </div>
-
-        <div class="node-detail-section">
-            <h4>Status</h4>
-            <span class="pivot-badge ${status}" style="display:inline-block;">${status}</span>
-        </div>
-
-        <div class="node-detail-section">
-            <h4>Connections (${connections.length})</h4>
-            ${connections.length > 0 ? connections.map(c => `
-                <div class="connected-node" onclick="selectNodeInGraph('${c.node.id}')">
-                    <span class="conn-dot" style="background:${c.edgeType === 'semantic' ? 'var(--accent)' : 'var(--teal)'}"></span>
-                    <span class="text-sm">${escapeHtml(c.node.name)}</span>
-                    <span class="conn-type">${c.edgeType || 'related'}</span>
-                </div>
-            `).join('') : '<p class="text-xs text-muted">No connections found</p>'}
-        </div>
-    `;
+  info.textContent = `Done! ${files.length} file(s) uploaded.`;
+  setTimeout(() => {
+    closeUploadModal();
+    renderSourcesPanel();
+  }, 1000);
 }
 
-function renderNodeDetail() {
-    if (!App.selectedNodeId) {
-        document.getElementById('nodeEmpty').classList.remove('hidden');
-        document.getElementById('nodeDetail').classList.add('hidden');
-    }
+// ═══════════════════════════════════════════════
+// DATA REFRESH
+// ═══════════════════════════════════════════════
+async function refreshProjectData() {
+  try {
+    const s = await api('/api/state');
+    state.nodes = s.nodes || [];
+    state.edges = s.edges || [];
+    state.pivots = s.pivots || [];
+  } catch (e) { /* silent */ }
 }
 
-function selectNodeInGraph(nodeId) {
-    const node = App.nodes.find(n => n.id === nodeId);
-    if (!node) return;
-
-    App.selectedNodeId = nodeId;
-    const pos = App.nodePositions[nodeId];
-    if (pos) {
-        App.camera.x = App.canvasWidth / 2 - pos.x * App.camera.zoom;
-        App.camera.y = App.canvasHeight / 2 - pos.y * App.camera.zoom;
-    }
-    showNodeDetail(node);
+// ═══════════════════════════════════════════════
+// UTILITY
+// ═══════════════════════════════════════════════
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = String(s);
+  return d.innerHTML;
 }
 
-// --- Global Actions ---
-async function resetState() {
-    if (!confirm('Reset all state to initial sample data? This cannot be undone.')) return;
-    try {
-        await API('/api/init', { method: 'POST' });
-        App.state = await API('/api/state');
-        syncState();
-        App.nodePositions = {};
-        layoutNodes();
-        fitGraph();
-        renderAll();
-        showToast('State reset to sample data', 'success');
-    } catch (e) {
-        showToast('Failed to reset', 'error');
-    }
-}
-
-async function regenerateGraph() {
-    try {
-        const result = await API('/api/graph/connect', { method: 'POST' });
-        App.state = await API('/api/state');
-        syncState();
-        renderAll();
-        showToast(`Regenerated ${result.edges_generated} edges`, 'success');
-    } catch (e) {
-        showToast('Failed to regenerate graph', 'error');
-    }
-}
-
-// --- Keyboard Shortcuts ---
-document.addEventListener('keydown', (e) => {
-    // Focus command input with /
-    if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
-        e.preventDefault();
-        document.getElementById('commandInput').focus();
-    }
-    // Escape to blur
-    if (e.key === 'Escape') {
-        document.activeElement.blur();
-        App.selectedNodeId = null;
-        renderNodeDetail();
-    }
+// Auto-resize textarea
+const chatInput = document.getElementById('chat-input');
+chatInput.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
 });
 
-// --- Boot ---
-document.addEventListener('DOMContentLoaded', init);
-</script>
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  renderHome();
+});
 
+window.addEventListener('resize', () => {
+  if (state.activeProjectId) renderGraph();
+});
+</script>
 </body>
 </html>
